@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CAD/CAM Генератор конических зубчатых колес (ALK800FU)</title>
+    <title>CAD/CAM РЦСП.3482.02.00.05 (ALK800FU)</title>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #e0e0e0; }
         #canvas-container { width: 100vw; height: 100vh; display: block; touch-action: none; }
@@ -17,45 +17,46 @@
         #ui-toggle:active { background: #01579b; }
 
         #ui { 
-            position: fixed; top: 12px; left: 12px; background: rgba(22, 22, 22, 0.96); 
-            padding: 14px; border-radius: 8px; box-shadow: 0 4px 25px rgba(0,0,0,0.85); 
-            z-index: 1500; border: 1px solid #3a3a3a; width: 365px; max-height: 95vh; overflow-y: auto;
+            position: fixed; top: 12px; left: 12px; background: rgba(20, 20, 20, 0.97); 
+            padding: 13px; border-radius: 8px; box-shadow: 0 4px 25px rgba(0,0,0,0.85); 
+            z-index: 1500; border: 1px solid #3a3a3a; width: 375px; max-height: 96vh; overflow-y: auto;
             box-sizing: border-box; display: block;
         }
         
-        h3 { margin: 0 0 8px 0; color: #4fc3f7; font-size: 15px; border-bottom: 1px solid #444; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .control-group { margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        label { font-size: 11.5px; color: #bbb; flex: 1; padding-right: 8px; }
-        input[type="number"], select { width: 110px; padding: 4px 6px; background: #161616; color: #fff; border: 1px solid #555; border-radius: 4px; text-align: center; font-size: 12px; box-sizing: border-box; }
-        input[readonly] { background: #252525; color: #81d4fa; border-color: #333; }
+        h3 { margin: 0 0 6px 0; color: #4fc3f7; font-size: 14.5px; border-bottom: 1px solid #444; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .control-group { margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        label { font-size: 11px; color: #bbb; flex: 1; padding-right: 6px; }
+        input[type="number"], select { width: 108px; padding: 3px 5px; background: #161616; color: #fff; border: 1px solid #555; border-radius: 4px; text-align: center; font-size: 11.5px; box-sizing: border-box; }
+        input[readonly] { background: #222; color: #81d4fa; border-color: #333; }
         input[type="range"] { flex: 1; margin: 0 6px; cursor: pointer; }
         
-        button { width: 100%; padding: 9px; background: #0288d1; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 12px; transition: background 0.15s; }
+        button { width: 100%; padding: 8px; background: #0288d1; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; font-size: 11.5px; transition: background 0.15s; }
         button:hover { background: #039be5; }
-        button:active { transform: translateY(1px); }
         button.secondary { background: #2e7d32; }
         button.secondary:hover { background: #388e3c; }
         button.accent { background: #ef6c00; }
         button.accent:hover { background: #f57c00; }
-        button.preset-btn { background: #455a64; padding: 6px; font-size: 11px; margin-top: 2px; }
-        button.preset-btn:hover { background: #607d8b; }
-        button.play-btn { width: 34px; padding: 4px; margin: 0; background: #f57c00; font-size: 12px; flex-shrink: 0; }
+        button.preset-btn { background: #37474f; padding: 6px; font-size: 11px; margin-top: 2px; border: 1px solid #546e7a; }
+        button.preset-btn:hover { background: #455a64; }
+        button.play-btn { width: 32px; padding: 3px; margin: 0; background: #f57c00; font-size: 11px; flex-shrink: 0; }
         
-        .section-title { font-size: 11px; font-weight: bold; color: #81d4fa; margin: 10px 0 5px 0; text-transform: uppercase; border-left: 3px solid #0288d1; padding-left: 6px; }
-        #status-box { margin-bottom: 6px; padding: 7px; border-radius: 4px; font-size: 11px; background: #1b5e20; color: #e8f5e9; border: 1px solid #2e7d32; line-height: 1.35; }
+        .section-title { font-size: 10.5px; font-weight: bold; color: #81d4fa; margin: 9px 0 4px 0; text-transform: uppercase; border-left: 3px solid #0288d1; padding-left: 6px; }
+        #status-box { margin-bottom: 6px; padding: 6px; border-radius: 4px; font-size: 10.5px; background: #1b5e20; color: #e8f5e9; border: 1px solid #2e7d32; line-height: 1.3; }
         #status-box.warning { background: #b71c1c; color: #ffebee; border: 1px solid #e53935; }
-        #gost-check-box { margin-bottom: 8px; padding: 6px 8px; border-radius: 4px; font-size: 11px; background: #1a2327; color: #b0bec5; border: 1px solid #37474f; display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px; }
+        
+        #gost-check-box { margin-bottom: 6px; padding: 6px 8px; border-radius: 4px; font-size: 10.5px; background: #161f24; color: #cfd8dc; border: 1px solid #37474f; display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
         #gost-check-box span b { color: #4fc3f7; }
-        .row-btns { display: flex; gap: 6px; }
-        .sim-controls { display: flex; align-items: center; width: 140px; }
+        #gost-check-box span.full-row { grid-column: 1 / -1; border-top: 1px solid #263238; padding-top: 3px; margin-top: 1px; }
+        .row-btns { display: flex; gap: 5px; }
+        .sim-controls { display: flex; align-items: center; width: 135px; }
 
         @media (max-width: 768px) {
             #ui-toggle { display: block; }
-            #ui { width: 94vw; top: 58px; left: 3vw; max-height: calc(100vh - 70px); padding: 12px; }
+            #ui { width: 94vw; top: 56px; left: 3vw; max-height: calc(100vh - 68px); padding: 12px; }
             #ui.hidden { display: none !important; }
-            input[type="number"], select { width: 115px; padding: 7px; font-size: 13px; }
-            button { padding: 11px; font-size: 13px; }
-            label { font-size: 12.5px; }
+            input[type="number"], select { width: 112px; padding: 6px; font-size: 12.5px; }
+            button { padding: 10px; font-size: 12.5px; }
+            label { font-size: 12px; }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -66,614 +67,44 @@
 <button id="ui-toggle" type="button">⚙️ Настройки</button>
 
 <div id="ui">
-    <h3><span>CAD/CAM Конические колеса</span> <span style="font-size:11px; color:#81d4fa;">v8.1 Exact-Module</span></h3>
-    <div id="status-box">Загрузка геометрического ядра...</div>
+    <h3><span>РЦСП.3482.02.00.05 CAD/CAM</span> <span style="font-size:10.5px; color:#81d4fa;">v9.0 ГОСТ 13754</span></h3>
+    <div id="status-box">Загрузка таблицы чертежа...</div>
+    
+    <!-- Контрольная панель замеров DXF и таблицы чертежа -->
     <div id="gost-check-box">
-        <span>de: <b id="lbl-de">108.00</b> мм</span>
-        <span>mm: <b id="lbl-mm">2.548</b> мм</span>
-        <span>Se: <b id="lbl-se">4.712</b> мм</span>
-        <span>ee: <b id="lbl-ee">4.712</b> мм</span>
+        <span>de: <b id="lbl-de">108.000</b> мм</span>
+        <span>dm (изм): <b id="lbl-dm">91.800</b> мм</span>
+        <span>Хорда зуба Sy: <b id="lbl-sy-res">3.922</b> мм</span>
+        <span>Высота хорды ha: <b id="lbl-ha-res">2.491</b> мм</span>
+        <span>Впадина UV (Re): <b id="lbl-we">4.803</b> мм</span>
+        <span>Впадина XY (Ri): <b id="lbl-wi">3.356</b> мм</span>
+        <span class="full-row">Зуб Se (дуга Re): <b id="lbl-se">4.615</b> мм | Шаг Pe: <b id="lbl-pe">9.425</b> мм</span>
     </div>
 
-    <div class="row-btns" style="margin-bottom: 6px;">
-        <button type="button" class="preset-btn" onclick="applyFactoryPreset('05')">Эталон .05/.06 (me=3, z=36)</button>
-        <button type="button" class="preset-btn" onclick="syncBlankToGOST()">Авто-расчет Dae/Dai</button>
+    <div class="row-btns" style="margin-bottom: 5px;">
+        <button type="button" class="preset-btn" onclick="applyDrawingPreset('mid')">Чертеж .05 (Середина допуска Sy)</button>
+        <button type="button" class="preset-btn" onclick="applyDrawingPreset('nom')">Чертеж .05 (Номинал 4.005)</button>
     </div>
 
-    <div class="section-title">1. Геометрия по ГОСТ 19325 / Чертежу</div>
-    <div class="control-group"><label>Внешний окр. модуль (me):</label><input type="number" id="p-me" value="3.0" step="0.1" min="0.5" oninput="onBaseParamChange()"></div>
-    <div class="control-group"><label>Число зубьев (z):</label><input type="number" id="p-z" value="36" step="1" min="6" oninput="onBaseParamChange()"></div>
+    <div class="section-title">1. Таблица чертежа (ГОСТ 13754-81)</div>
+    <div class="control-group"><label>Внешний окр. модуль (Me):</label><input type="number" id="p-me" value="3.0" step="0.1" oninput="onBaseParamChange()"></div>
+    <div class="control-group"><label>Число зубьев (Z):</label><input type="number" id="p-z" value="36" step="1" oninput="onBaseParamChange()"></div>
     <div class="control-group"><label>Угол делит. конуса (delta °):</label><input type="number" id="p-delta" value="45.0" step="0.1" oninput="onBaseParamChange()"></div>
-    <div class="control-group"><label>Внешнее конусн. расст. (Re):</label><input type="number" id="p-re" value="76.3675" step="0.001" readonly title="Рассчитывается автоматически: Re = me * z / (2 * sin(delta))"></div>
-    <div class="control-group"><label>Ширина венца (b):</label><input type="number" id="p-b" value="23.0" step="0.1" oninput="onBaseParamChange()"></div>
-    <div class="control-group"><label>Внешний Ø загот. (Dae):</label><input type="number" id="p-dae" value="112.24" step="0.01" oninput="rebuildApp()"></div>
-    <div class="control-group"><label>Внутр. Ø загот. (Dai):</label><input type="number" id="p-dai" value="78.42" step="0.01" oninput="rebuildApp()"></div>
+    <div class="control-group"><label>Внешнее конусн. расст. (Re):</label><input type="number" id="p-re" value="76.368" step="0.001" readonly></div>
+    <div class="control-group"><label>Измерит. конусн. расст. (Rm):</label><input type="number" id="p-rm" value="64.913" step="0.001" oninput="rebuildApp()"></div>
+    <div class="control-group"><label>Ширина венца (b):</label><input type="number" id="p-b" value="23.0" step="0.1" oninput="rebuildApp()"></div>
+    <div class="control-group"><label>Внешняя высота зуба (he):</label><input type="number" id="p-he" value="6.6" step="0.1" readonly></div>
 
-    <div class="section-title">2. Параметры исходного контура</div>
+    <div class="section-title">2. Толщина зуба по хорде и Заготовка</div>
+    <div class="control-group"><label>Номинал хорды в Rm (Sy):</label><input type="number" id="p-sy-nom" value="4.005" step="0.001" oninput="rebuildApp()"></div>
+    <div class="control-group"><label>Отклонение хорды (-0.056..-0.11):</label><input type="number" id="p-sy-dev" value="-0.083" step="0.001" oninput="rebuildApp()"></div>
+    <div class="control-group"><label>Внешний Ø загот. (Dae h9):</label><input type="number" id="p-dae" value="112.20" step="0.01" oninput="rebuildApp()"></div>
+    <div class="control-group"><label>Внутр. Ø загот. (Dai):</label><input type="number" id="p-dai" value="78.40" step="0.01" oninput="rebuildApp()"></div>
     <div class="control-group"><label>Угол профиля (alpha °):</label><input type="number" id="p-alpha" value="20.0" step="0.1" oninput="rebuildApp()"></div>
-    <div class="control-group"><label>Коэф. высоты головки (ha*):</label><input type="number" id="p-ha" value="1.0" step="0.05" oninput="onBaseParamChange()"></div>
-    <div class="control-group"><label>Коэф. рад. зазора (c*):</label><input type="number" id="p-c" value="0.2" step="0.01" oninput="onBaseParamChange()"></div>
-    <div class="control-group"><label>Коэф. смещения (x):</label><input type="number" id="p-x" value="0.0" step="0.05" oninput="onBaseParamChange()"></div>
-    <div class="control-group"><label>Утонение зуба (Sy_mid):</label><input type="number" id="p-sy" value="0.028" step="0.001" oninput="rebuildApp()"></div>
+    <div class="control-group"><label>Коэф. смещения (X):</label><input type="number" id="p-x" value="0.0" step="0.01" oninput="rebuildApp()"></div>
     
     <div class="section-title">3. Визуализация и Симуляция</div>
-    <div class="control-group"><label>Сегментов траектории:</label><input type="number" id="p-res" value="198" step="2" min="40" max="400" onchange="rebuildApp()"></div>
-    <div class="control-group"><label>Режим камеры:</label>
+    <div class="control-group"><label>Точек на профиль:</label><input type="number" id="p-res" value="198" step="2" min="40" max="400" onchange="rebuildApp()"></div>
+    <div class="control-group"><label>Режим просмотра:</label>
         <select id="p-cam" onchange="switchCameraMode()">
-            <option value="3d">3D Твердотельный</option>
-            <option value="2d">2D Проекция станка (XY/UV)</option>
-        </select>
-    </div>
-    <div class="control-group"><label>Показать деталь:</label>
-        <select id="p-display" onchange="rebuildApp()">
-            <option value="full">Полное колесо</option>
-            <option value="single">Одна впадина (1 рез)</option>
-        </select>
-    </div>
-    <div class="control-group"><label>Движение проволоки:</label>
-        <div class="sim-controls">
-            <button type="button" class="play-btn" id="play-btn" onclick="togglePlay()">▶</button>
-            <input type="range" id="sim-slider" min="0" max="1000" value="0" oninput="updateSimulation()">
-        </div>
-    </div>
-
-    <div class="section-title">4. Кинематика ALK800FU и Выгрузка</div>
-    <div class="control-group"><label>Наклон стола ось A (delta_f °):</label><input type="number" id="p-delta-f" value="42.3011" step="0.0001" oninput="rebuildApp()"></div>
-    <div class="control-group"><label>Припуск черновой (мм):</label><input type="number" id="p-allowance" value="0.15" step="0.01"></div>
-    <div class="control-group"><label>Офсет проволоки D1 (мм):</label><input type="number" id="p-offset" value="0.100" step="0.005"></div>
-
-    <button type="button" onclick="onRebuildButtonClick()">🔄 Пересчитать геометрию</button>
-    
-    <div class="row-btns">
-        <button type="button" class="secondary" onclick="downloadNC()">📥 G-код (.nc)</button>
-        <button type="button" class="secondary" onclick="downloadDXF()">📥 Контуры (.dxf)</button>
-    </div>
-    <div class="row-btns">
-        <button type="button" class="accent" onclick="savePreset()">💾 Сохранить</button>
-        <button type="button" class="accent" onclick="loadPreset(false)">📂 Загрузить</button>
-    </div>
-</div>
-
-<div id="canvas-container"></div>
-
-<script>
-    let scene, renderer, camera3D, camera2D, activeCamera, controls;
-    let gearGroup, flatGroup, wireSimLine;
-    let cachedData = { top3D: [], bot3D: [], topFlat: [], botFlat: [], H_cut: 22.97, undercut: false, maxWireAngle: 0 };
-    let isPlaying = false;
-
-    document.getElementById('ui-toggle').addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const ui = document.getElementById('ui');
-        ui.classList.toggle('hidden');
-        this.innerText = ui.classList.contains('hidden') ? '⚙️ Настройки' : '✖ Закрыть';
-    });
-
-    function onRebuildButtonClick() {
-        rebuildApp();
-        if (window.innerWidth <= 768) {
-            document.getElementById('ui').classList.add('hidden');
-            document.getElementById('ui-toggle').innerText = '⚙️ Настройки';
-        }
-    }
-
-    // Автоматический пересчет зависимых ГОСТ-параметров при смене модуля me, числа зубьев z или угла конуса
-    function onBaseParamChange() {
-        const me = parseFloat(document.getElementById('p-me').value) || 3.0;
-        const z = parseInt(document.getElementById('p-z').value) || 36;
-        const deltaDeg = parseFloat(document.getElementById('p-delta').value) || 45.0;
-        const delta = deltaDeg * Math.PI / 180;
-        const b = parseFloat(document.getElementById('p-b').value) || 23.0;
-        const ha_star = parseFloat(document.getElementById('p-ha').value) || 1.0;
-        const c_star = parseFloat(document.getElementById('p-c').value) || 0.2;
-        const x_shift = parseFloat(document.getElementById('p-x').value) || 0.0;
-
-        // Строгая формула ГОСТ 19325-73: de = me * z, Re = de / (2 * sin(delta))
-        const de = me * z;
-        const Re = de / (2 * Math.sin(delta));
-        document.getElementById('p-re').value = Re.toFixed(4);
-
-        // Угол ножки зуба theta_f и рекомендуемый угол наклона стола delta_f
-        const hf_e = (ha_star + c_star - x_shift) * me;
-        const theta_f_deg = Math.atan(hf_e / Re) * 180 / Math.PI;
-        document.getElementById('p-delta-f').value = (deltaDeg - theta_f_deg).toFixed(4);
-
-        syncBlankToGOST();
-    }
-
-    // Синхронизация диаметров заготовки Dae и Dai с текущим модулем по ГОСТ
-    function syncBlankToGOST() {
-        const me = parseFloat(document.getElementById('p-me').value) || 3.0;
-        const z = parseInt(document.getElementById('p-z').value) || 36;
-        const delta = (parseFloat(document.getElementById('p-delta').value) || 45.0) * Math.PI / 180;
-        const b = parseFloat(document.getElementById('p-b').value) || 23.0;
-        const ha_star = parseFloat(document.getElementById('p-ha').value) || 1.0;
-        const x_shift = parseFloat(document.getElementById('p-x').value) || 0.0;
-
-        const de = me * z;
-        const Re = de / (2 * Math.sin(delta));
-        const Ri = Math.max(1, Re - b);
-
-        const ha_e = (ha_star + x_shift) * me;
-        const Dae = de + 2 * ha_e * Math.cos(delta);
-        const Dai = Dae * (Ri / Re);
-
-        document.getElementById('p-dae').value = Dae.toFixed(2);
-        document.getElementById('p-dai').value = Dai.toFixed(2);
-        rebuildApp();
-    }
-
-    function applyFactoryPreset(type) {
-        if (type === '05') {
-            document.getElementById('p-me').value = "3.0";
-            document.getElementById('p-z').value = "36";
-            document.getElementById('p-re').value = "76.3675";
-            document.getElementById('p-b').value = "23.0";
-            document.getElementById('p-dae').value = "112.24";
-            document.getElementById('p-dai').value = "78.42";
-            document.getElementById('p-delta').value = "45.0";
-            document.getElementById('p-alpha').value = "20.0";
-            document.getElementById('p-ha').value = "1.0";
-            document.getElementById('p-c').value = "0.2";
-            document.getElementById('p-x').value = "0.0";
-            document.getElementById('p-sy').value = "0.028";
-            document.getElementById('p-res').value = "198";
-            document.getElementById('p-delta-f').value = "42.3011";
-            rebuildApp();
-        }
-    }
-
-    function init3D() {
-        const container = document.getElementById('canvas-container');
-        scene = new THREE.Scene();
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        const aspect = window.innerWidth / window.innerHeight;
-        camera3D = new THREE.PerspectiveCamera(42, aspect, 0.1, 2000);
-        camera3D.position.set(0, -140, 80);
-        camera3D.up.set(0, 0, 1);
-
-        const viewSize = 16; 
-        camera2D = new THREE.OrthographicCamera(-viewSize * aspect / 2, viewSize * aspect / 2, viewSize / 2, -viewSize / 2, -100, 500);
-        camera2D.position.set(0, 3.5, 100);
-        camera2D.up.set(0, 1, 0);
-        camera2D.lookAt(0, 3.5, 0);
-
-        activeCamera = camera3D;
-
-        controls = new THREE.OrbitControls(camera3D, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.06;
-        controls.target.set(0, 0, -45);
-
-        scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-        const light1 = new THREE.DirectionalLight(0xffffff, 0.85);
-        light1.position.set(70, -120, 160);
-        scene.add(light1);
-        const light2 = new THREE.DirectionalLight(0x90caf9, 0.4);
-        light2.position.set(-70, 100, -50);
-        scene.add(light2);
-        
-        scene.add(new THREE.AxesHelper(25));
-
-        const wireMat = new THREE.LineBasicMaterial({ color: 0xffeb3b, linewidth: 3 });
-        const wireGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0,0,10)]);
-        wireSimLine = new THREE.Line(wireGeo, wireMat);
-        scene.add(wireSimLine);
-
-        window.addEventListener('resize', onWindowResize);
-
-        loadPreset(true);
-        rebuildApp();
-        animate();
-    }
-
-    function onWindowResize() {
-        const aspect = window.innerWidth / window.innerHeight;
-        camera3D.aspect = aspect;
-        camera3D.updateProjectionMatrix();
-
-        const me = parseFloat(document.getElementById('p-me').value) || 3.0;
-        const viewSize = me * 5.2;
-        camera2D.left = -viewSize * aspect / 2;
-        camera2D.right = viewSize * aspect / 2;
-        camera2D.top = viewSize / 2;
-        camera2D.bottom = -viewSize / 2;
-        camera2D.updateProjectionMatrix();
-
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    function switchCameraMode() {
-        const mode = document.getElementById('p-cam').value;
-        if (mode === '2d') {
-            onWindowResize();
-            activeCamera = camera2D;
-            controls.enabled = false;
-            if (gearGroup) gearGroup.visible = false;
-            if (flatGroup) flatGroup.visible = true;
-        } else {
-            activeCamera = camera3D;
-            controls.enabled = true;
-            if (gearGroup) gearGroup.visible = true;
-            if (flatGroup) flatGroup.visible = false;
-        }
-        updateSimulation();
-    }
-
-    // Математическое ядро по ГОСТ 19325-73 с точным соответствием окружному модулю me
-    function calculateGearGeometry() {
-        const me = parseFloat(document.getElementById('p-me').value) || 3.0;
-        const z = parseInt(document.getElementById('p-z').value) || 36;
-        const delta = (parseFloat(document.getElementById('p-delta').value) || 45.0) * Math.PI / 180;
-        const b = parseFloat(document.getElementById('p-b').value) || 23.0;
-        const alpha = (parseFloat(document.getElementById('p-alpha').value) || 20.0) * Math.PI / 180;
-        
-        // Строгое конусное расстояние от модуля me и числа зубьев z
-        const de = me * z;
-        const Re = de / (2 * Math.sin(delta));
-        document.getElementById('p-re').value = Re.toFixed(4);
-
-        const Ri = Math.max(1.0, Re - b);
-        const Rm = Re - b / 2;
-        const mm = me * (Rm / Re);
-
-        const Dae = parseFloat(document.getElementById('p-dae').value) || (de + 2 * me * Math.cos(delta));
-        const Dai = parseFloat(document.getElementById('p-dai').value) || (Dae * (Ri / Re));
-        const ha_star = parseFloat(document.getElementById('p-ha').value) || 1.0;
-        const c_star = parseFloat(document.getElementById('p-c').value) || 0.2;
-        const x_shift = parseFloat(document.getElementById('p-x').value) || 0.0;
-        const delta_s_mid = parseFloat(document.getElementById('p-sy').value) || 0.028;
-        const delta_f = (parseFloat(document.getElementById('p-delta-f').value) || 42.3011) * Math.PI / 180;
-        const totalSegs = Math.max(40, parseInt(document.getElementById('p-res').value) || 198);
-
-        const theta_f = delta - delta_f;
-        const H_cut = b * Math.cos(theta_f);
-
-        // Эквивалентное бинарное колесо Трегольда
-        const z_v = z / Math.cos(delta);
-        const z_crit = 2 * (ha_star - x_shift) / Math.pow(Math.sin(alpha), 2);
-
-        // Контрольные параметры по ГОСТ на внешнем торце (вывод в панель)
-        const delta_s_ext = delta_s_mid * (Re / Rm);
-        const Se_gost = (0.5 * Math.PI + 2 * x_shift * Math.tan(alpha)) * me - delta_s_ext;
-        const ee_gost = Math.PI * me - Se_gost;
-        document.getElementById('lbl-de').innerText = de.toFixed(2);
-        document.getElementById('lbl-mm').innerText = mm.toFixed(3);
-        document.getElementById('lbl-se').innerText = Se_gost.toFixed(3);
-        document.getElementById('lbl-ee').innerText = ee_gost.toFixed(3);
-
-        // Фактические высоты головок от введенных диаметров токарной заготовки Dae/Dai
-        const d_i = 2 * Ri * Math.sin(delta);
-        const h_ae_blank = Math.max(0.1 * me, (Dae - de) / (2 * Math.cos(delta)));
-        const h_ai_blank = Math.max(0.1 * me * (Ri / Re), (Dai - d_i) / (2 * Math.cos(delta)));
-
-        const invSteps = Math.floor(totalSegs / 2) - 12;
-        const filletSteps = 12;
-
-        function buildSection(R, isTop) {
-            const R_ratio = R / Re;
-            const mt = me * R_ratio; // Точный окружной модуль в текущем сечении конуса
-            const r_p = R * Math.sin(delta); // Делительный радиус колеса (0.5 * mt * z)
-            const r_v = r_p / Math.cos(delta); // Радиус эквивалентного колеса Трегольда (0.5 * mt * z_v)
-
-            const hf = (ha_star + c_star - x_shift) * mt;
-            const ha = isTop ? h_ae_blank : h_ai_blank;
-
-            const rb = r_v * Math.cos(alpha);
-            const ra = r_v + ha;
-            const rr = r_v - hf;
-            const r_start = Math.max(rb, rr);
-
-            // Угловая полуширина впадины на дополнительном конусе строго по модулю mt
-            const tau_v = 2.0 * Math.PI / z_v;
-            const delta_s_cone = delta_s_mid * (R / Rm);
-            const half_space_width_arc = (0.25 * Math.PI * mt) + (0.5 * delta_s_cone) - (x_shift * mt * Math.tan(alpha));
-            const psi_v = half_space_width_arc / r_v; // Половина угловой ширины впадины на делительной окружности r_v
-            const inv_alpha = Math.tan(alpha) - alpha;
-            const psi_b = psi_v - inv_alpha; // Базовый угол начала эвольвенты впадины
-
-            function to3DAndFlat(xv, yv) {
-                // Полярные координаты точки на развертке дополнительного конуса Трегольда
-                const r_curr = Math.hypot(xv, yv);
-                const theta_v = Math.atan2(xv, yv);
-                const dh = r_curr - r_v; // Высота точки над делительной окружностью вдоль образующей доп. конуса
-
-                // Перевод угла с развертки доп. конуса в истинный азимутальный угол конического колеса
-                const phi_wheel = theta_v / Math.sin(delta);
-
-                // Истинный радиус точки от оси колеса и координата Z вдоль оси колеса
-                const rho = r_p + dh * Math.cos(delta);
-                const Z = -R * Math.cos(delta) + dh * Math.sin(delta);
-                const X = rho * Math.sin(phi_wheel);
-                const Y = rho * Math.cos(phi_wheel);
-
-                // Проекция в плоскость XY/UV станка (0,0 в центре дна впадины)
-                const y_from_root = yv - rr;
-                const R_pt = R + y_from_root * Math.sin(theta_f);
-                const k_ray = R_pt / R;
-                const fx = xv * k_ray;
-                const fy = y_from_root * Math.cos(theta_f);
-
-                return { pt3D: new THREE.Vector3(X, Y, Z), ptFlat: new THREE.Vector3(fx, fy, 0) };
-            }
-
-            const invPts = [];
-            const r0 = r_start + 0.01 * mt;
-            for (let i = 0; i < invSteps; i++) {
-                const r_curr = r0 + (ra - r0) * (i / (invSteps - 1));
-                const alpha_r = Math.acos(Math.min(1.0, rb / r_curr));
-                const inv_r = Math.tan(alpha_r) - alpha_r;
-                const th = psi_b + inv_r;
-                invPts.push({ xv: r_curr * Math.sin(th), yv: r_curr * Math.cos(th) });
-            }
-
-            // Галтель корня зуба
-            const pFirst = invPts[0];
-            const filletPts = [];
-            for (let i = 0; i < filletSteps; i++) {
-                const t = i / (filletSteps - 1);
-                const xv = 2 * (1 - t) * t * (pFirst.xv * 0.85) + t * t * pFirst.xv;
-                const yv = (1 - t * t) * rr + t * t * pFirst.yv;
-                filletPts.push({ xv, yv });
-            }
-
-            // Выход проволоки (Lead-out) за габарит заготовки
-            const pTop = invPts[invPts.length - 1];
-            const pPrev = invPts[invPts.length - 2];
-            const dx = pTop.xv - pPrev.xv;
-            const dy = pTop.yv - pPrev.yv;
-            const leadDist = 0.4 * mt;
-            const leadOut = { xv: pTop.xv + dx * (leadDist / dy), yv: pTop.yv + leadDist };
-
-            const rightHalf = [...filletPts, ...invPts.slice(1), leadOut];
-            const leftHalf = rightHalf.slice().reverse().map(p => ({ xv: -p.xv, yv: p.yv }));
-            const full2D = [...leftHalf, ...rightHalf.slice(1)];
-
-            const pts3D = [], ptsFlat = [];
-            for (let p of full2D) {
-                const res = to3DAndFlat(p.xv, p.yv);
-                pts3D.push(res.pt3D);
-                ptsFlat.push(res.ptFlat);
-            }
-            return { pts3D, ptsFlat };
-        }
-
-        const topSec = buildSection(Re, true);
-        const botSec = buildSection(Ri, false);
-
-        let maxDist = 0;
-        for (let i = 0; i < topSec.ptsFlat.length; i++) {
-            const d = Math.hypot(topSec.ptsFlat[i].x - botSec.ptsFlat[i].x, topSec.ptsFlat[i].y - botSec.ptsFlat[i].y);
-            if (d > maxDist) maxDist = d;
-        }
-        const maxWireAngle = Math.atan2(maxDist, H_cut) * 180 / Math.PI;
-
-        return {
-            top3D: topSec.pts3D,
-            bot3D: botSec.pts3D,
-            topFlat: topSec.ptsFlat,
-            botFlat: botSec.ptsFlat,
-            H_cut,
-            undercut: z_v < z_crit,
-            maxWireAngle
-        };
-    }
-
-    function rebuildApp() {
-        if (gearGroup) scene.remove(gearGroup);
-        if (flatGroup) scene.remove(flatGroup);
-        gearGroup = new THREE.Group();
-        flatGroup = new THREE.Group();
-
-        cachedData = calculateGearGeometry();
-        const { top3D, bot3D, topFlat, botFlat, H_cut, undercut, maxWireAngle } = cachedData;
-
-        const z = parseInt(document.getElementById('p-z').value) || 36;
-        const displayMode = document.getElementById('p-display').value;
-        const z_total = (displayMode === 'full') ? z : 1;
-
-        const statusBox = document.getElementById('status-box');
-        if (undercut) {
-            statusBox.className = "warning";
-            statusBox.innerHTML = `⚠️ ВНИМАНИЕ: Подрез корня (z_v < z_крит)! Макс. угол проволоки: ${maxWireAngle.toFixed(2)}°`;
-        } else {
-            statusBox.className = "";
-            statusBox.innerHTML = `✅ ГОСТ 19325: ${topFlat.length} тчк | Высота реза H: ${H_cut.toFixed(2)} мм | Угол нити: ${maxWireAngle.toFixed(2)}°`;
-        }
-
-        const startIdx = 1;
-        const endIdx = top3D.length - 2;
-        const toothPtsCount = endIdx - startIdx + 1;
-
-        const vertices = [], indices = [];
-        let offset = 0;
-
-        for (let k = 0; k < z_total; k++) {
-            const angle = k * (2 * Math.PI / z);
-            const cosA = Math.cos(angle), sinA = Math.sin(angle);
-
-            for (let i = startIdx; i <= endIdx; i++) {
-                const b = bot3D[i], t = top3D[i];
-                vertices.push(b.x * cosA - b.y * sinA, b.x * sinA + b.y * cosA, b.z);
-                vertices.push(t.x * cosA - t.y * sinA, t.x * sinA + t.y * cosA, t.z);
-            }
-
-            for (let i = 0; i < toothPtsCount - 1; i++) {
-                const cb = offset + i * 2, ct = cb + 1, nb = offset + (i + 1) * 2, nt = nb + 1;
-                indices.push(cb, nb, ct);
-                indices.push(nb, nt, ct);
-            }
-
-            if (displayMode === 'full') {
-                const last_b = offset + (toothPtsCount - 1) * 2, last_t = last_b + 1;
-                const next_first_b = (k === z_total - 1) ? 0 : offset + toothPtsCount * 2;
-                indices.push(last_b, next_first_b, last_t);
-                indices.push(next_first_b, next_first_b + 1, last_t);
-            }
-            offset += toothPtsCount * 2;
-        }
-
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        geo.setIndex(indices);
-        geo.computeVertexNormals();
-
-        const mat = new THREE.MeshStandardMaterial({ color: 0x0288d1, roughness: 0.28, metalness: 0.75, side: THREE.DoubleSide });
-        gearGroup.add(new THREE.Mesh(geo, mat));
-
-        flatGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(botFlat), new THREE.LineBasicMaterial({ color: 0x00e676, linewidth: 2 })));
-        flatGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(topFlat), new THREE.LineBasicMaterial({ color: 0xe040fb, linewidth: 2 })));
-
-        scene.add(gearGroup);
-        scene.add(flatGroup);
-
-        switchCameraMode();
-    }
-
-    function togglePlay() {
-        isPlaying = !isPlaying;
-        document.getElementById('play-btn').innerText = isPlaying ? "⏸" : "▶";
-    }
-
-    function updateSimulation() {
-        if (!cachedData.top3D.length) return;
-        const val = document.getElementById('sim-slider').value / 1000;
-        const maxIdx = cachedData.top3D.length - 1;
-        const floatIdx = val * maxIdx;
-        const idx = Math.floor(floatIdx);
-        const t = floatIdx - idx;
-        const nextIdx = Math.min(idx + 1, maxIdx);
-
-        const is2D = document.getElementById('p-cam').value === '2d';
-        const arrTop = is2D ? cachedData.topFlat : cachedData.top3D;
-        const arrBot = is2D ? cachedData.botFlat : cachedData.bot3D;
-
-        const ptTop = new THREE.Vector3().lerpVectors(arrTop[idx], arrTop[nextIdx], t);
-        const ptBot = new THREE.Vector3().lerpVectors(arrBot[idx], arrBot[nextIdx], t);
-
-        if (is2D) { ptTop.z = 5; ptBot.z = -5; }
-        wireSimLine.geometry.setFromPoints([ptBot, ptTop]);
-    }
-
-    function animate() {
-        requestAnimationFrame(animate);
-        if (activeCamera === camera3D) controls.update();
-        if (isPlaying) {
-            const slider = document.getElementById('sim-slider');
-            let nextVal = parseInt(slider.value) + 4;
-            if (nextVal >= 1000) { nextVal = 0; isPlaying = false; document.getElementById('play-btn').innerText = "▶"; }
-            slider.value = nextVal;
-            updateSimulation();
-        }
-        renderer.render(scene, activeCamera);
-    }
-
-    function applyRoughAllowance(pt, allowance) {
-        const signX = pt.x < 0 ? 1 : -1;
-        const newX = (Math.abs(pt.x) > allowance) ? pt.x + signX * allowance : 0;
-        return { x: newX, y: pt.y + allowance };
-    }
-
-    function downloadNC() {
-        const top = cachedData.topFlat, bottom = cachedData.botFlat;
-        const z = parseInt(document.getElementById('p-z').value) || 36;
-        const me = parseFloat(document.getElementById('p-me').value) || 3.0;
-        const allowance = parseFloat(document.getElementById('p-allowance').value) || 0.15;
-        const d1 = parseFloat(document.getElementById('p-offset').value) || 0.100;
-        
-        let nc = `%
-O0001 (ALK800FU 4-AXIS BEVEL GEAR ME=${me} Z=${z} H=${cachedData.H_cut.toFixed(3)})
-(OFFSET D1=${d1.toFixed(3)} ROUGH ALLOWANCE=${allowance.toFixed(3)})
-G21 G90
-G92 X0.0 Y0.0 U0.0 V0.0 C0.0
-
-(--- PASS 1: ROUGH CUT ---)
-M98 P1001 L${z}
-
-(--- PASS 2: FINISH CUT ---)
-M98 P1002 L${z}
-M02
-
-O1001 (ROUGH SUBROUTINE)
-`;
-        const b0R = applyRoughAllowance(bottom[0], allowance);
-        const t0R = applyRoughAllowance(top[0], allowance);
-        nc += `G01 G42 X${b0R.x.toFixed(4)} Y${b0R.y.toFixed(4)} U${t0R.x.toFixed(4)} V${t0R.y.toFixed(4)} D1 F75.0\n`;
-        for (let i = 1; i < top.length; i++) {
-            const bR = applyRoughAllowance(bottom[i], allowance);
-            const tR = applyRoughAllowance(top[i], allowance);
-            nc += `G01 X${bR.x.toFixed(4)} Y${bR.y.toFixed(4)} U${tR.x.toFixed(4)} V${tR.y.toFixed(4)}\n`;
-        }
-        nc += `G01 G40 X0.0 Y${(top[0].y + 1.0).toFixed(4)} U0.0 V${(top[0].y + 1.0).toFixed(4)}\n`;
-        nc += `G91 G00 C${(360 / z).toFixed(4)}\nG90\nM99\n\n`;
-
-        nc += `O1002 (FINISH SUBROUTINE)\n`;
-        nc += `G01 G42 X${bottom[0].x.toFixed(4)} Y${bottom[0].y.toFixed(4)} U${top[0].x.toFixed(4)} V${top[0].y.toFixed(4)} D2 F40.0\n`;
-        for (let i = 1; i < top.length; i++) {
-            nc += `G01 X${bottom[i].x.toFixed(4)} Y${bottom[i].y.toFixed(4)} U${top[i].x.toFixed(4)} V${top[i].y.toFixed(4)}\n`;
-        }
-        nc += `G01 G40 X0.0 Y${(top[0].y + 1.0).toFixed(4)} U0.0 V${(top[0].y + 1.0).toFixed(4)}\n`;
-        nc += `G91 G00 C${(360 / z).toFixed(4)}\nG90\nM99\n%`;
-
-        downloadFile(nc, `ALK800FU_ME${me}_Z${z}_multipass.nc`, "text/plain");
-    }
-
-    function downloadDXF() {
-        const top = cachedData.topFlat, bottom = cachedData.botFlat;
-        let dxf = "0\nSECTION\n2\nENTITIES\n";
-        function addOpenPolyline(pts, layer) {
-            for (let i = 0; i < pts.length - 1; i++) {
-                dxf += `0\nLINE\n8\n${layer}\n10\n${pts[i].x.toFixed(6)}\n20\n${pts[i].y.toFixed(6)}\n30\n0.0\n11\n${pts[i+1].x.toFixed(6)}\n21\n${pts[i+1].y.toFixed(6)}\n31\n0.0\n`;
-            }
-        }
-        addOpenPolyline(bottom, "XY_SMALL_END");
-        addOpenPolyline(top, "UV_LARGE_END");
-        dxf += "0\nENDSEC\n0\nEOF\n";
-        downloadFile(dxf, "bevel_gear_4axis_cam.dxf", "application/dxf");
-    }
-
-    function savePreset() {
-        const data = {};
-        document.querySelectorAll('#ui input[type="number"], #ui select').forEach(el => data[el.id] = el.value);
-        localStorage.setItem('gear_preset_v81', JSON.stringify(data));
-        alert('✅ Параметры сохранены в память браузера!');
-    }
-
-    function loadPreset(silent = false) {
-        const saved = localStorage.getItem('gear_preset_v81');
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
-                for (let id in data) {
-                    const el = document.getElementById(id);
-                    if (el) el.value = data[id];
-                }
-                if (!silent) {
-                    rebuildApp();
-                    alert('📂 Сохраненные параметры загружены!');
-                }
-            } catch (e) { console.error(e); }
-        } else if (!silent) {
-            alert('Нет сохраненных пресетов в памяти браузера.');
-        }
-    }
-
-    function downloadFile(content, filename, mime) {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([content], { type: mime }));
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-
-    init3D();
-</script>
-
-</body>
-</html>
+            <option value
