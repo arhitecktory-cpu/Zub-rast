@@ -2,60 +2,74 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ГОСТ CAD/CAM Генератор конических зубчатых колес (EDM)</title>
+    <title>Профессиональный CAD/CAM Генератор конических шестерен (EDM)</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: sans-serif; background: #121212; color: #e0e0e0; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #e0e0e0; }
         #canvas-container { width: 100vw; height: 100vh; display: block; }
         #ui { 
-            position: absolute; top: 15px; left: 15px; background: rgba(30, 30, 30, 0.95); 
-            padding: 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); 
-            z-index: 10; border: 1px solid #444; width: 340px; max-height: 92vh; overflow-y: auto;
+            position: absolute; top: 15px; left: 15px; background: rgba(20, 20, 20, 0.96); 
+            padding: 15px; border-radius: 8px; box-shadow: 0 4px 25px rgba(0,0,0,0.8); 
+            z-index: 10; border: 1px solid #333; width: 360px; max-height: 94vh; overflow-y: auto;
         }
-        h3 { margin-top: 0; color: #4fc3f7; font-size: 15px; border-bottom: 1px solid #444; padding-bottom: 6px; }
-        .control-group { margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        label { font-size: 12px; color: #bbb; }
-        input { width: 100px; padding: 4px; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px; text-align: center; font-size: 12px; }
-        button { width: 100%; padding: 8px; background: #0288d1; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; transition: background 0.2s; }
+        h3 { margin-top: 0; color: #4fc3f7; font-size: 15px; border-bottom: 1px solid #444; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .control-group { margin-bottom: 7px; display: flex; justify-content: space-between; align-items: center; }
+        label { font-size: 11.5px; color: #aaa; }
+        input, select { width: 105px; padding: 3px 6px; background: #1a1a1a; color: #fff; border: 1px solid #444; border-radius: 4px; text-align: center; font-size: 12px; }
+        button { width: 100%; padding: 8px; background: #0288d1; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 6px; transition: background 0.2s; font-size: 12px; }
         button:hover { background: #039be5; }
-        button.secondary { background: #388e3c; margin-top: 4px; }
+        button.secondary { background: #388e3c; }
         button.secondary:hover { background: #43a047; }
+        button.accent { background: #f57c00; }
+        button.accent:hover { background: #fb8c00; }
         .section-title { font-size: 11px; font-weight: bold; color: #81d4fa; margin: 10px 0 4px 0; text-transform: uppercase; border-left: 3px solid #0288d1; padding-left: 5px; }
+        #status-box { margin-top: 10px; padding: 8px; border-radius: 4px; font-size: 11px; background: #1b5e20; color: #c8e6c9; border: 1px solid #2e7d32; }
+        #status-box.warning { background: #b71c1c; color: #ffcdd2; border: 1px solid #c62828; }
+        .row-btns { display: flex; gap: 5px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
 <div id="ui">
-    <h3>ГОСТ Параметры (Конические колеса)</h3>
+    <h3><span>CAD/CAM Конические шестерни</span> <span style="font-size:10px; color:#888;">v2.5</span></h3>
     
-    <div class="section-title">1. Основные геометрические параметры</div>
+    <div id="status-box">Геометрия стабильна. Подрез не обнаружен.</div>
+
+    <div class="section-title">1. Параметры по ГОСТ / Чертежу</div>
     <div class="control-group"><label>Модуль внешний me:</label><input type="number" id="p-me" value="3.0" step="0.5"></div>
     <div class="control-group"><label>Число зубьев z:</label><input type="number" id="p-z" value="36" step="1"></div>
-    <div class="control-group"><label>Внешнее конусное расстояние Re:</label><input type="number" id="p-re" value="76.368" step="0.001"></div>
+    <div class="control-group"><label>Внешний конус Re:</label><input type="number" id="p-re" value="76.368" step="0.001"></div>
     <div class="control-group"><label>Ширина венца b:</label><input type="number" id="p-b" value="23.0" step="0.1"></div>
-    <div class="control-group"><label>Угол делительного конуса delta (°):</label><input type="number" id="p-delta" value="45.0" step="0.1"></div>
+    <div class="control-group"><label>Угол конуса delta (°):</label><input type="number" id="p-delta" value="45.0" step="0.1"></div>
     <div class="control-group"><label>Угол профиля alpha (°):</label><input type="number" id="p-alpha" value="20.0" step="0.1"></div>
 
-    <div class="section-title">2. ГОСТ Коэффициенты (ГОСТ 19325)</div>
-    <div class="control-group"><label>Коэф. высоты головки ha*:</label><input type="number" id="p-ha" value="1.0" step="0.05"></div>
-    <div class="control-group"><label>Коэф. радиального зазора c*:</label><input type="number" id="p-c" value="0.2" step="0.01"></div>
-    <div class="control-group"><label>Коэф. смещения исходного контура x:</label><input type="number" id="p-x" value="0.0" step="0.05"></div>
-    <div class="control-group"><label>Утонение зуба Sy_mid:</label><input type="number" id="p-sy" value="0.028" step="0.001"></div>
+    <div class="section-title">2. Коэффициенты и точность</div>
+    <div class="control-group"><label>Смещение x:</label><input type="number" id="p-x" value="0.0" step="0.05"></div>
+    <div class="control-group"><label>Утонение Sy_mid:</label><input type="number" id="p-sy" value="0.028" step="0.001"></div>
+    <div class="control-group"><label>Точки аппроксимации:</label><input type="number" id="p-res" value="99" step="1" min="20" max="200"></div>
+    <div class="control-group"><label>Отображ. проволоки:</label><select id="p-show-wire" onchange="rebuildApp()"><option value="yes">Вкл</option><option value="no">Выкл</option></select></div>
 
-    <div class="section-title">3. Кинематика станка (ALK800FU)</div>
-    <div class="control-group"><label>Угол наклона оси A delta_f (°):</label><input type="number" id="p-delta-f" value="42.3011" step="0.0001"></div>
-    <div class="control-group"><label>Радиус проволоки + искра (D1):</label><input type="number" id="p-offset" value="0.100" step="0.005"></div>
+    <div class="section-title">3. Станок и ЭЭО (ALK800FU)</div>
+    <div class="control-group"><label>Угол оси A delta_f (°):</label><input type="number" id="p-delta-f" value="42.3011" step="0.0001"></div>
+    <div class="control-group"><label>Припуск черновой (mm):</label><input type="number" id="p-allowance" value="0.15" step="0.05"></div>
+    <div class="control-group"><label>Искра + радиус (D1):</label><input type="number" id="p-offset" value="0.100" step="0.005"></div>
 
-    <button onclick="rebuildApp()">Пересчитать по ГОСТу</button>
-    <button class="secondary" onclick="downloadNC()">Скачать G-код (.nc)</button>
+    <button onclick="rebuildApp()">Пересчитать модель</button>
+    
+    <div class="section-title">4. Экспорт и Пресеты</div>
+    <button class="secondary" onclick="downloadNC()">Скачать G-код (Многопроходный .nc)</button>
     <button class="secondary" onclick="downloadDXF()">Скачать DXF (Верх/Низ)</button>
+    <div class="row-btns">
+        <button class="accent" onclick="savePreset()">Сохранить</button>
+        <button class="accent" onclick="loadPreset()">Загрузить</button>
+    </div>
 </div>
 
 <div id="canvas-container"></div>
 
 <script>
-    let scene, camera, renderer, wireframeGroup;
-    let cachedContours = { top: [], bottom: [] };
+    let scene, camera, renderer, gearGroup, wireGroup;
+    let cachedData = { top: [], bottom: [], H_cut: 0, undercut: false };
 
     function init3D() {
         const container = document.getElementById('canvas-container');
@@ -65,13 +79,13 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
-        camera.position.set(0, -110, 90);
+        camera.position.set(0, -120, 100);
         camera.up.set(0, 0, 1);
         camera.lookAt(0, 0, 0);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-        const light = new THREE.DirectionalLight(0xffffff, 0.8);
-        light.position.set(50, -100, 150);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const light = new THREE.DirectionalLight(0xffffff, 0.9);
+        light.position.set(60, -120, 180);
         scene.add(light);
 
         window.addEventListener('resize', () => {
@@ -80,11 +94,11 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        loadPreset(true); // Автозагрузка при старте
         rebuildApp();
         animate();
     }
 
-    // Полный расчет по ГОСТ с учетом коэффициентов смещения и высоты
     function generateToothContours() {
         const me = parseFloat(document.getElementById('p-me').value);
         const z = parseInt(document.getElementById('p-z').value);
@@ -93,27 +107,28 @@
         const delta = parseFloat(document.getElementById('p-delta').value) * Math.PI / 180;
         const alpha = parseFloat(document.getElementById('p-alpha').value) * Math.PI / 180;
         
-        const ha_star = parseFloat(document.getElementById('p-ha').value);
-        const c_star = parseFloat(document.getElementById('p-c').value);
         const x_shift = parseFloat(document.getElementById('p-x').value);
         const delta_s_mid = parseFloat(document.getElementById('p-sy').value);
         const delta_f = parseFloat(document.getElementById('p-delta-f').value) * Math.PI / 180;
+        const res = parseInt(document.getElementById('p-res').value);
 
         const Ri = Re - b;
         const Rm = Re - b / 2;
         const theta_f = delta - delta_f;
         const H_cut = b * Math.cos(theta_f);
 
+        // Проверка на подрез (критическое число зубьев для конических передач)
+        const z_v = z / Math.cos(delta);
+        const z_crit = 2 * (1.0 - x_shift) / (Math.sin(alpha)**2);
+        const hasUndercut = z_v < z_crit;
+
         function buildContour(R_cone) {
             const R_ratio = R_cone / Re;
             const me_local = me * R_ratio;
-            
-            // ГОСТовские высоты головки и ножки с учетом внешнего модуля и смещения
-            const h_a = (ha_star + x_shift * (1 - R_ratio)) * me_local;
-            const h_f = (ha_star + c_star - x_shift * (1 - R_ratio)) * me_local;
+            const h_a = (1.0 + x_shift * (1 - R_ratio)) * me_local;
+            const h_f = (1.2 - x_shift * (1 - R_ratio)) * me_local;
 
             const r_v = R_cone;
-            const z_v = z / Math.cos(delta); // эквивалентное число зубьев
             const r_b = r_v * Math.cos(alpha);
             const r_a = r_v + h_a;
             const r_root = r_v - h_f;
@@ -121,12 +136,11 @@
 
             const tau_v = 2.0 * Math.PI / z_v;
             const delta_s_cone = delta_s_mid * (R_cone / Rm);
-            // Толщина и положение по эвольвенте
             const psi_b = (tau_v / 4.0) + (delta_s_cone / (2.0 * r_v)) + (2 * x_shift * Math.tan(alpha) / z) - (Math.tan(alpha) - alpha);
             const H_tooth_ortho = (h_a + h_f) * Math.cos(theta_f);
 
             const right_inv = [];
-            for (let r of linspace(r_start + 0.02 * me_local, r_a, 45)) {
+            for (let r of linspace(r_start + 0.01 * me_local, r_a, res)) {
                 let alpha_r = Math.acos(Math.min(1.0, r_b / r));
                 let inv_r = Math.tan(alpha_r) - alpha_r;
                 let th = psi_b + inv_r;
@@ -137,11 +151,11 @@
                 right_inv.push({ x: x_c * k_ray, y: y_c * Math.cos(theta_f) - H_tooth_ortho });
             }
 
-            // Плавное переходное скругление в корнях (галтель по ГОСТ)
+            // Плавное переходное скругление в корне (галтель)
             const p0 = right_inv[0];
             const fillet = [];
-            for (let t of linspace(0, 1, 12)) {
-                let x = (1-t)**2 * (p0.x * 0.15) + 2*(1-t)*t * p0.x + t**2 * p0.x;
+            for (let t of linspace(0, 1, 10)) {
+                let x = (1-t)**2 * (p0.x * 0.1) + 2*(1-t)*t * p0.x + t**2 * p0.x;
                 let y = (1-t)**2 * (-H_tooth_ortho) + 2*(1-t)*t * (-H_tooth_ortho) + t**2 * p0.y;
                 fillet.push({x, y});
             }
@@ -157,7 +171,7 @@
             return [...left_side, ...right_side.slice(1)];
         }
 
-        return { top: buildContour(Re), bottom: buildContour(Ri), H_cut };
+        return { top: buildContour(Re), bottom: buildContour(Ri), H_cut, undercut: hasUndercut };
     }
 
     function linspace(start, stop, num) {
@@ -168,20 +182,32 @@
     }
 
     function rebuildApp() {
-        if (wireframeGroup) scene.remove(wireframeGroup);
-        wireframeGroup = new THREE.Group();
+        if (gearGroup) scene.remove(gearGroup);
+        if (wireGroup) scene.remove(wireGroup);
+        
+        gearGroup = new THREE.Group();
+        wireGroup = new THREE.Group();
 
-        cachedContours = generateToothContours();
-        const { top, bottom, H_cut } = cachedContours;
+        cachedData = generateToothContours();
+        const { top, bottom, H_cut, undercut } = cachedData;
 
+        // Обновление статуса интерфейса
+        const statusBox = document.getElementById('status-box');
+        if (undercut) {
+            statusBox.className = "warning";
+            statusBox.innerHTML = "ВНИМАНИЕ: Обнаружен подрез ножки зуба (z_v < z_крит)!";
+        } else {
+            statusBox.className = "";
+            statusBox.innerHTML = "Геометрия по ГОСТ стабильна. Подрез отсутствует.";
+        }
+
+        // Построение 3D сетки зуба
         const vertices = [];
         const indices = [];
-
         for (let i = 0; i < top.length; i++) {
             vertices.push(bottom[i].x, bottom[i].y, 0);
             vertices.push(top[i].x, top[i].y, H_cut);
         }
-
         for (let i = 0; i < top.length - 1; i++) {
             let cb = i * 2, ct = cb + 1;
             let nb = (i + 1) * 2, nt = nb + 1;
@@ -189,45 +215,76 @@
             indices.push(nb, nt, ct);
         }
 
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.setIndex(indices);
-        geometry.computeVertexNormals();
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geo.setIndex(indices);
+        geo.computeVertexNormals();
 
-        const material = new THREE.MeshStandardMaterial({ 
-            color: 0x0288d1, roughness: 0.25, metalness: 0.6, side: THREE.DoubleSide 
-        });
-        
-        wireframeGroup.add(new THREE.Mesh(geometry, material));
-        scene.add(wireframeGroup);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x0288d1, roughness: 0.2, metalness: 0.7, side: THREE.DoubleSide });
+        gearGroup.add(new THREE.Mesh(geo, mat));
+
+        // Визуализация проволоки (кинематика 4-осевого станка)
+        if (document.getElementById('p-show-wire').value === 'yes') {
+            const wireMat = new THREE.LineBasicMaterial({ color: 0xffa726, transparent: true, opacity: 0.6 });
+            // Покажем каждый 5-й элемент проволоки для чистоты сцены
+            for (let i = 0; i < top.length; i += Math.max(1, Math.floor(top.length / 25))) {
+                const points = [
+                    new THREE.Vector3(bottom[i].x, bottom[i].y, 0),
+                    new THREE.Vector3(top[i].x, top[i].y, H_cut)
+                ];
+                const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+                wireGroup.add(new THREE.Line(lineGeo, wireMat));
+            }
+        }
+
+        scene.add(gearGroup);
+        scene.add(wireGroup);
     }
 
     function animate() {
         requestAnimationFrame(animate);
-        if (wireframeGroup) wireframeGroup.rotation.z += 0.002;
+        if (gearGroup) gearGroup.rotation.z += 0.0015;
+        if (wireGroup) wireGroup.rotation.z += 0.0015;
         renderer.render(scene, camera);
     }
 
+    // Многопроходный G-код (Черновой с припуском + Чистовой)
     function downloadNC() {
-        const { top, bottom } = cachedContours;
+        const { top, bottom } = cachedData;
         const z = document.getElementById('p-z').value;
+        const allowance = parseFloat(document.getElementById('p-allowance').value);
         
-        let nc = "%\nO0001 (GOST PARAMETRIC GEAR 4-AXIS EDM)\n";
-        nc += "G21\nG90\nG92 X0 Y0 U0 V0 C0\n";
-        nc += `M98 P1001 L${z}\nM02\n\n`;
+        let nc = "%\nO0001 (MULTI-PASS 4-AXIS EDM GEAR)\nG21\nG90\nG92 X0 Y0 U0 V0 C0\n\n";
+        
+        // Проход 1: Черновой с припуском
+        nc += "(--- ROUGH PASS WITH ALLOWANCE ---)\n";
+        nc += `M98 P1001 L${z}\n\n`;
+        
+        // Проход 2: Чистовой в размер
+        nc += "(--- FINISH PASS ---)\n";
+        nc += `M98 P1002 L${z}\nM02\n\n`;
+
+        // Подпрограмма черновая
         nc += "O1001\n";
-        nc += `G01 G42 X${bottom[0].x.toFixed(5)} Y${bottom[0].y.toFixed(5)} U${top[0].x.toFixed(5)} V${top[0].y.toFixed(5)} D1 F60.0\n`;
-        
+        nc += `G01 G42 X${(bottom[0].x + allowance).toFixed(5)} Y${bottom[0].y.toFixed(5)} U${(top[0].x + allowance).toFixed(5)} V${top[0].y.toFixed(5)} D1 F80.0\n`;
+        for (let i = 1; i < top.length; i++) {
+            nc += `G01 X${(bottom[i].x + allowance).toFixed(5)} Y${bottom[i].y.toFixed(5)} U${(top[i].x + allowance).toFixed(5)} V${top[i].y.toFixed(5)}\n`;
+        }
+        nc += "G01 G40 X0 Y0 U0 V0\nG91\nG00 C" + (360 / z).toFixed(3) + "\nG90\nM99\n\n";
+
+        // Подпрограмма чистовая
+        nc += "O1002\n";
+        nc += `G01 G42 X${bottom[0].x.toFixed(5)} Y${bottom[0].y.toFixed(5)} U${top[0].x.toFixed(5)} V${top[0].y.toFixed(5)} D2 F40.0\n`;
         for (let i = 1; i < top.length; i++) {
             nc += `G01 X${bottom[i].x.toFixed(5)} Y${bottom[i].y.toFixed(5)} U${top[i].x.toFixed(5)} V${top[i].y.toFixed(5)}\n`;
         }
-        
         nc += "G01 G40 X0 Y0 U0 V0\nG91\nG00 C" + (360 / z).toFixed(3) + "\nG90\nM99\n%";
-        downloadFile(nc, "gost_gear_program.nc", "text/plain");
+
+        downloadFile(nc, "gear_multipass.nc", "text/plain");
     }
 
     function downloadDXF() {
-        const { top, bottom } = cachedContours;
+        const { top, bottom } = cachedData;
         let dxf = "0\nSECTION\n2\nENTITIES\n";
         function addPoly(pts, layer) {
             pts.forEach((p, idx) => {
@@ -235,10 +292,33 @@
                 dxf += `0\nLINE\n8\n${layer}\n10\n${p.x}\n20\n${p.y}\n30\n0\n11\n${next.x}\n21\n${next.y}\n31\n0\n`;
             });
         }
-        addPoly(bottom, "SMALL_END_XY");
-        addPoly(top, "LARGE_END_UV");
+        addPoly(bottom, "XY_SMALL_END");
+        addPoly(top, "UV_LARGE_END");
         dxf += "0\nENDSEC\n0\nEOF";
-        downloadFile(dxf, "gost_gear_contours.dxf", "application/dxf");
+        downloadFile(dxf, "gear_contours_pro.dxf", "application/dxf");
+    }
+
+    // Сохранение и загрузка пресетов через localStorage
+    function savePreset() {
+        const data = {};
+        document.querySelectorAll('#ui input, #ui select').forEach(el => data[el.id] = el.value);
+        localStorage.setItem('gear_preset_active', JSON.stringify(data));
+        alert('Параметры успешно сохранены в память браузера!');
+    }
+
+    function loadPreset(silent = false) {
+        const saved = localStorage.getItem('gear_preset_active');
+        if (saved) {
+            const data = JSON.parse(saved);
+            for (let id in data) {
+                const el = document.getElementById(id);
+                if (el) el.value = data[id];
+            }
+            if (!silent) {
+                rebuildApp();
+                alert('Параметры загружены!');
+            }
+        }
     }
 
     function downloadFile(content, filename, contentType) {
