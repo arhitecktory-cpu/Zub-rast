@@ -31,7 +31,7 @@
 <body>
 
 <div id="ui">
-    <h3><span>CAD/CAM Конические шестерни</span> <span style="font-size:10px; color:#888;">v2.5</span></h3>
+    <h3><span>CAD/CAM Конические шестерни</span> <span style="font-size:10px; color:#888;">v3.0 3D-Solid</span></h3>
     
     <div id="status-box">Геометрия стабильна. Подрез не обнаружен.</div>
 
@@ -43,11 +43,22 @@
     <div class="control-group"><label>Угол конуса delta (°):</label><input type="number" id="p-delta" value="45.0" step="0.1"></div>
     <div class="control-group"><label>Угол профиля alpha (°):</label><input type="number" id="p-alpha" value="20.0" step="0.1"></div>
 
-    <div class="section-title">2. Коэффициенты и точность</div>
+    <div class="section-title">2. Коэффициенты и визуализация</div>
     <div class="control-group"><label>Смещение x:</label><input type="number" id="p-x" value="0.0" step="0.05"></div>
     <div class="control-group"><label>Утонение Sy_mid:</label><input type="number" id="p-sy" value="0.028" step="0.001"></div>
     <div class="control-group"><label>Точки аппроксимации:</label><input type="number" id="p-res" value="99" step="1" min="20" max="200"></div>
-    <div class="control-group"><label>Отображ. проволоки:</label><select id="p-show-wire" onchange="rebuildApp()"><option value="yes">Вкл</option><option value="no">Выкл</option></select></div>
+    <div class="control-group"><label>Отображение модели:</label>
+        <select id="p-display" onchange="rebuildApp()">
+            <option value="full">Вся деталь</option>
+            <option value="single">Только один рез</option>
+        </select>
+    </div>
+    <div class="control-group"><label>Отображ. проволоки:</label>
+        <select id="p-show-wire" onchange="rebuildApp()">
+            <option value="no">Выкл</option>
+            <option value="yes">Вкл (для 1 зуба)</option>
+        </select>
+    </div>
 
     <div class="section-title">3. Станок и ЭЭО (ALK800FU)</div>
     <div class="control-group"><label>Угол оси A delta_f (°):</label><input type="number" id="p-delta-f" value="42.3011" step="0.0001"></div>
@@ -94,7 +105,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        loadPreset(true); // Автозагрузка при старте
+        loadPreset(true); 
         rebuildApp();
         animate();
     }
@@ -117,7 +128,6 @@
         const theta_f = delta - delta_f;
         const H_cut = b * Math.cos(theta_f);
 
-        // Проверка на подрез (критическое число зубьев для конических передач)
         const z_v = z / Math.cos(delta);
         const z_crit = 2 * (1.0 - x_shift) / (Math.sin(alpha)**2);
         const hasUndercut = z_v < z_crit;
@@ -151,7 +161,6 @@
                 right_inv.push({ x: x_c * k_ray, y: y_c * Math.cos(theta_f) - H_tooth_ortho });
             }
 
-            // Плавное переходное скругление в корне (галтель)
             const p0 = right_inv[0];
             const fillet = [];
             for (let t of linspace(0, 1, 10)) {
@@ -190,29 +199,61 @@
 
         cachedData = generateToothContours();
         const { top, bottom, H_cut, undercut } = cachedData;
+        const z = parseInt(document.getElementById('p-z').value);
+        const displayMode = document.getElementById('p-display').value;
+        const z_total = (displayMode === 'full') ? z : 1;
 
-        // Обновление статуса интерфейса
         const statusBox = document.getElementById('status-box');
         if (undercut) {
             statusBox.className = "warning";
             statusBox.innerHTML = "ВНИМАНИЕ: Обнаружен подрез ножки зуба (z_v < z_крит)!";
         } else {
             statusBox.className = "";
-            statusBox.innerHTML = "Геометрия по ГОСТ стабильна. Подрез отсутствует.";
+            statusBox.innerHTML = "Геометрия стабильна. Подрез отсутствует.";
         }
 
-        // Построение 3D сетки зуба
         const vertices = [];
         const indices = [];
-        for (let i = 0; i < top.length; i++) {
-            vertices.push(bottom[i].x, bottom[i].y, 0);
-            vertices.push(top[i].x, top[i].y, H_cut);
-        }
-        for (let i = 0; i < top.length - 1; i++) {
-            let cb = i * 2, ct = cb + 1;
-            let nb = (i + 1) * 2, nt = nb + 1;
-            indices.push(cb, nb, ct);
-            indices.push(nb, nt, ct);
+        let offset = 0;
+        const numPts = top.length;
+
+        // Генерация сплошного венца с круговым массивом
+        for (let k = 0; k < z_total; k++) {
+            const angle = k * (2 * Math.PI / z);
+            const cosA = Math.cos(angle);
+            const sinA = Math.sin(angle);
+
+            // Трансформация точек для каждого зуба
+            for (let i = 0; i < numPts; i++) {
+                let bx = bottom[i].x * cosA - bottom[i].y * sinA;
+                let by = bottom[i].x * sinA + bottom[i].y * cosA;
+                vertices.push(bx, by, 0);
+
+                let tx = top[i].x * cosA - top[i].y * sinA;
+                let ty = top[i].x * sinA + top[i].y * cosA;
+                vertices.push(tx, ty, H_cut);
+            }
+
+            // Индексы боковой поверхности реза (впадина)
+            for (let i = 0; i < numPts - 1; i++) {
+                let cb = offset + i * 2, ct = cb + 1;
+                let nb = offset + (i + 1) * 2, nt = nb + 1;
+                indices.push(cb, nb, ct);
+                indices.push(nb, nt, ct);
+            }
+
+            // Замыкание по наружному диаметру (вершинам зубьев), если включен режим всей детали
+            if (displayMode === 'full') {
+                let last_b = offset + (numPts - 1) * 2;
+                let last_t = last_b + 1;
+                let next_first_b = (k === z_total - 1) ? 0 : offset + numPts * 2;
+                let next_first_t = next_first_b + 1;
+
+                indices.push(last_b, next_first_b, last_t);
+                indices.push(next_first_b, next_first_t, last_t);
+            }
+
+            offset += numPts * 2;
         }
 
         const geo = new THREE.BufferGeometry();
@@ -220,20 +261,18 @@
         geo.setIndex(indices);
         geo.computeVertexNormals();
 
-        const mat = new THREE.MeshStandardMaterial({ color: 0x0288d1, roughness: 0.2, metalness: 0.7, side: THREE.DoubleSide });
+        const mat = new THREE.MeshStandardMaterial({ color: 0x0288d1, roughness: 0.3, metalness: 0.8, side: THREE.DoubleSide });
         gearGroup.add(new THREE.Mesh(geo, mat));
 
-        // Визуализация проволоки (кинематика 4-осевого станка)
+        // Визуализация проволоки (только для первой впадины, чтобы не перегружать деталь)
         if (document.getElementById('p-show-wire').value === 'yes') {
-            const wireMat = new THREE.LineBasicMaterial({ color: 0xffa726, transparent: true, opacity: 0.6 });
-            // Покажем каждый 5-й элемент проволоки для чистоты сцены
+            const wireMat = new THREE.LineBasicMaterial({ color: 0xffa726, transparent: true, opacity: 0.8 });
             for (let i = 0; i < top.length; i += Math.max(1, Math.floor(top.length / 25))) {
                 const points = [
                     new THREE.Vector3(bottom[i].x, bottom[i].y, 0),
                     new THREE.Vector3(top[i].x, top[i].y, H_cut)
                 ];
-                const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
-                wireGroup.add(new THREE.Line(lineGeo, wireMat));
+                wireGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), wireMat));
             }
         }
 
@@ -243,12 +282,11 @@
 
     function animate() {
         requestAnimationFrame(animate);
-        if (gearGroup) gearGroup.rotation.z += 0.0015;
-        if (wireGroup) wireGroup.rotation.z += 0.0015;
+        if (gearGroup) gearGroup.rotation.z -= 0.002;
+        if (wireGroup) wireGroup.rotation.z -= 0.002;
         renderer.render(scene, camera);
     }
 
-    // Многопроходный G-код (Черновой с припуском + Чистовой)
     function downloadNC() {
         const { top, bottom } = cachedData;
         const z = document.getElementById('p-z').value;
@@ -256,28 +294,19 @@
         
         let nc = "%\nO0001 (MULTI-PASS 4-AXIS EDM GEAR)\nG21\nG90\nG92 X0 Y0 U0 V0 C0\n\n";
         
-        // Проход 1: Черновой с припуском
         nc += "(--- ROUGH PASS WITH ALLOWANCE ---)\n";
         nc += `M98 P1001 L${z}\n\n`;
-        
-        // Проход 2: Чистовой в размер
         nc += "(--- FINISH PASS ---)\n";
         nc += `M98 P1002 L${z}\nM02\n\n`;
 
-        // Подпрограмма черновая
         nc += "O1001\n";
         nc += `G01 G42 X${(bottom[0].x + allowance).toFixed(5)} Y${bottom[0].y.toFixed(5)} U${(top[0].x + allowance).toFixed(5)} V${top[0].y.toFixed(5)} D1 F80.0\n`;
-        for (let i = 1; i < top.length; i++) {
-            nc += `G01 X${(bottom[i].x + allowance).toFixed(5)} Y${bottom[i].y.toFixed(5)} U${(top[i].x + allowance).toFixed(5)} V${top[i].y.toFixed(5)}\n`;
-        }
+        for (let i = 1; i < top.length; i++) nc += `G01 X${(bottom[i].x + allowance).toFixed(5)} Y${bottom[i].y.toFixed(5)} U${(top[i].x + allowance).toFixed(5)} V${top[i].y.toFixed(5)}\n`;
         nc += "G01 G40 X0 Y0 U0 V0\nG91\nG00 C" + (360 / z).toFixed(3) + "\nG90\nM99\n\n";
 
-        // Подпрограмма чистовая
         nc += "O1002\n";
         nc += `G01 G42 X${bottom[0].x.toFixed(5)} Y${bottom[0].y.toFixed(5)} U${top[0].x.toFixed(5)} V${top[0].y.toFixed(5)} D2 F40.0\n`;
-        for (let i = 1; i < top.length; i++) {
-            nc += `G01 X${bottom[i].x.toFixed(5)} Y${bottom[i].y.toFixed(5)} U${top[i].x.toFixed(5)} V${top[i].y.toFixed(5)}\n`;
-        }
+        for (let i = 1; i < top.length; i++) nc += `G01 X${bottom[i].x.toFixed(5)} Y${bottom[i].y.toFixed(5)} U${top[i].x.toFixed(5)} V${top[i].y.toFixed(5)}\n`;
         nc += "G01 G40 X0 Y0 U0 V0\nG91\nG00 C" + (360 / z).toFixed(3) + "\nG90\nM99\n%";
 
         downloadFile(nc, "gear_multipass.nc", "text/plain");
@@ -298,7 +327,6 @@
         downloadFile(dxf, "gear_contours_pro.dxf", "application/dxf");
     }
 
-    // Сохранение и загрузка пресетов через localStorage
     function savePreset() {
         const data = {};
         document.querySelectorAll('#ui input, #ui select').forEach(el => data[el.id] = el.value);
