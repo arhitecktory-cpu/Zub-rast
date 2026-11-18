@@ -2,7 +2,6 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <!-- КРИТИЧНО ДЛЯ МОБИЛЬНЫХ: Отключает зум всей страницы и адаптирует под экран -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Профессиональный CAD/CAM Генератор (EDM)</title>
     <style>
@@ -40,23 +39,16 @@
         #status-box.warning { background: #b71c1c; color: #ffcdd2; border: 1px solid #c62828; }
         .row-btns { display: flex; gap: 8px; }
 
-        /* Адаптация под мобильные устройства */
         @media (max-width: 768px) {
             #ui-toggle { display: block; }
-            #ui { 
-                width: calc(100vw - 30px); 
-                top: 70px; 
-                max-height: calc(100vh - 90px);
-            }
+            #ui { width: calc(100vw - 30px); top: 70px; max-height: calc(100vh - 90px); }
             input, select { width: 120px; padding: 8px; }
             button { padding: 14px; font-size: 14px; }
             label { font-size: 14px; }
             .section-title { font-size: 13px; margin: 15px 0 8px 0; }
         }
     </style>
-    <!-- Основная библиотека Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- OrbitControls для управления вращением с помощью мыши и сенсора -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
@@ -64,7 +56,7 @@
 <div id="ui-toggle" onclick="toggleUI()">⚙️ Настройки</div>
 
 <div id="ui">
-    <h3><span>CAD/CAM Шестерни</span> <span style="font-size:11px; color:#888;">v4.0 Mobile</span></h3>
+    <h3><span>CAD/CAM Шестерни</span> <span style="font-size:11px; color:#888;">v5.0 True3D</span></h3>
     <div id="status-box">Геометрия стабильна.</div>
 
     <div class="section-title">1. Параметры по ГОСТ / Чертежу</div>
@@ -112,11 +104,9 @@
 
 <script>
     let scene, camera, renderer, gearGroup, wireGroup, controls;
-    let cachedData = { top: [], bottom: [], H_cut: 0, undercut: false };
+    let cachedData = { top: [], bottom: [], undercut: false };
 
-    function toggleUI() {
-        document.getElementById('ui').classList.toggle('hidden');
-    }
+    function toggleUI() { document.getElementById('ui').classList.toggle('hidden'); }
 
     function init3D() {
         const container = document.getElementById('canvas-container');
@@ -124,22 +114,25 @@
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        // Адаптация DPI для экранов мобильных (Retina)
         renderer.setPixelRatio(window.devicePixelRatio);
         container.appendChild(renderer.domElement);
 
-        camera.position.set(0, -120, 100);
+        camera.position.set(0, -120, 80); // Позиция для лучшего обзора конуса
         camera.up.set(0, 0, 1);
 
-        // Интерактивное управление (OrbitControls)
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
+        controls.target.set(0, 0, -40); // Фокус на центр детали
 
         scene.add(new THREE.AmbientLight(0xffffff, 0.7));
         const light = new THREE.DirectionalLight(0xffffff, 0.9);
         light.position.set(60, -120, 180);
         scene.add(light);
+        
+        // Оси координат для ориентации (Красная-X, Зеленая-Y, Синяя-Z)
+        const axesHelper = new THREE.AxesHelper(30);
+        scene.add(axesHelper);
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -152,7 +145,8 @@
         animate();
     }
 
-    function generateToothContours() {
+    // Истинный 3D математический генератор конического колеса (аппроксимация Трегольда)
+    function generateTrue3D() {
         const me = parseFloat(document.getElementById('p-me').value);
         const z = parseInt(document.getElementById('p-z').value);
         const Re = parseFloat(document.getElementById('p-re').value);
@@ -162,74 +156,70 @@
         
         const x_shift = parseFloat(document.getElementById('p-x').value);
         const delta_s_mid = parseFloat(document.getElementById('p-sy').value);
-        const delta_f = parseFloat(document.getElementById('p-delta-f').value) * Math.PI / 180;
         const res = parseInt(document.getElementById('p-res').value);
 
         const Ri = Re - b;
         const Rm = Re - b / 2;
-        const theta_f = delta - delta_f;
-        const H_cut = b * Math.cos(theta_f);
-
         const z_v = z / Math.cos(delta);
         const z_crit = 2 * (1.0 - x_shift) / (Math.sin(alpha)**2);
-        const hasUndercut = z_v < z_crit;
 
-        function buildContour(R_cone) {
-            const R_ratio = R_cone / Re;
-            const me_local = me * R_ratio;
-            const h_a = (1.0 + x_shift * (1 - R_ratio)) * me_local;
-            const h_f = (1.2 - x_shift * (1 - R_ratio)) * me_local;
+        function getProfile(R) {
+            const R_ratio = R / Re;
+            const mt = me * R_ratio;
+            const r_p = R * Math.sin(delta);
+            const r_v = r_p / Math.cos(delta); // Радиус дополнительного конуса
 
-            const r_v = R_cone;
-            const r_b = r_v * Math.cos(alpha);
-            const r_a = r_v + h_a;
-            const r_root = r_v - h_f;
-            const r_start = Math.max(r_b, r_root);
+            const ha = (1.0 + x_shift * (1 - R_ratio)) * mt;
+            const hf = (1.2 - x_shift * (1 - R_ratio)) * mt;
+
+            const rb = r_v * Math.cos(alpha);
+            const ra = r_v + ha;
+            const rr = r_v - hf;
+            const r_start = Math.max(rb, rr);
 
             const tau_v = 2.0 * Math.PI / z_v;
-            const delta_s_cone = delta_s_mid * (R_cone / Rm);
+            const delta_s_cone = delta_s_mid * (R / Rm);
             const psi_b = (tau_v / 4.0) + (delta_s_cone / (2.0 * r_v)) + (2 * x_shift * Math.tan(alpha) / z) - (Math.tan(alpha) - alpha);
-            const H_tooth_ortho = (h_a + h_f) * Math.cos(theta_f);
 
-            const right_inv = [];
-            for (let r of linspace(r_start + 0.01 * me_local, r_a, res)) {
-                let alpha_r = Math.acos(Math.min(1.0, r_b / r));
+            const pts = [];
+            let r_step = (ra - (r_start + 0.01 * mt)) / (res - 1);
+            for (let i = 0; i < res; i++) {
+                let r_curr = r_start + 0.01 * mt + r_step * i;
+                let alpha_r = Math.acos(Math.min(1.0, rb / r_curr));
                 let inv_r = Math.tan(alpha_r) - alpha_r;
                 let th = psi_b + inv_r;
-                let x_c = r * Math.sin(th);
-                let y_c = r * Math.cos(th) - r_root;
-                let R_pt = R_cone + y_c * Math.sin(theta_f);
-                let k_ray = R_pt / R_cone;
-                right_inv.push({ x: x_c * k_ray, y: y_c * Math.cos(theta_f) - H_tooth_ortho });
+
+                // Локальные 2D координаты эвольвенты
+                let xv = r_curr * Math.sin(th);
+                let yv = r_curr * Math.cos(th);
+
+                // Трансформация в истинное 3D-пространство конуса (Вершина в 0,0,0, деталь уходит в -Z)
+                let Z = -R / Math.cos(delta) + yv * Math.sin(delta);
+                let Y = yv * Math.cos(delta);
+                let X = xv;
+                pts.push(new THREE.Vector3(X, Y, Z));
             }
 
-            const p0 = right_inv[0];
+            // Галтель корня
+            const p0 = pts[0];
+            const Y_root = rr * Math.cos(delta);
+            const Z_root = -R / Math.cos(delta) + rr * Math.sin(delta);
+
             const fillet = [];
-            for (let t of linspace(0, 1, 10)) {
-                let x = (1-t)**2 * (p0.x * 0.1) + 2*(1-t)*t * p0.x + t**2 * p0.x;
-                let y = (1-t)**2 * (-H_tooth_ortho) + 2*(1-t)*t * (-H_tooth_ortho) + t**2 * p0.y;
-                fillet.push({x, y});
+            for (let i = 0; i <= 10; i++) {
+                let t = i / 10;
+                let X = (1-t)**2 * (p0.x * 0.1) + 2*(1-t)*t * p0.x + t**2 * p0.x;
+                let Y = (1-t)**2 * Y_root + 2*(1-t)*t * Y_root + t**2 * p0.y;
+                let Z = (1-t)**2 * Z_root + 2*(1-t)*t * Z_root + t**2 * p0.z;
+                fillet.push(new THREE.Vector3(X, Y, Z));
             }
 
-            const p_top = right_inv[right_inv.length - 1];
-            const p_prev = right_inv[right_inv.length - 2];
-            const dx = p_top.x - p_prev.x, dy = p_top.y - p_prev.y;
-            const p_lead = { x: p_top.x + dx * ((1.5 - p_top.y) / dy), y: 1.5 };
-
-            const right_side = [...fillet, ...right_inv.slice(1), p_lead];
-            const left_side = right_side.slice().reverse().map(p => ({ x: -p.x, y: p.y }));
-            
-            return [...left_side, ...right_side.slice(1)];
+            const right = [...fillet, ...pts.slice(1)];
+            const left = right.slice().reverse().map(p => new THREE.Vector3(-p.x, p.y, p.z));
+            return [...left, ...right.slice(1)];
         }
 
-        return { top: buildContour(Re), bottom: buildContour(Ri), H_cut, undercut: hasUndercut };
-    }
-
-    function linspace(start, stop, num) {
-        const arr = [];
-        const step = (stop - start) / (num - 1);
-        for (let i = 0; i < num; i++) arr.push(start + step * i);
-        return arr;
+        return { top3D: getProfile(Re), bot3D: getProfile(Ri), undercut: z_v < z_crit };
     }
 
     function rebuildApp() {
@@ -239,14 +229,15 @@
         gearGroup = new THREE.Group();
         wireGroup = new THREE.Group();
 
-        cachedData = generateToothContours();
-        const { top, bottom, H_cut, undercut } = cachedData;
+        const data3D = generateTrue3D();
+        const top3D = data3D.top3D;
+        const bot3D = data3D.bot3D;
         const z = parseInt(document.getElementById('p-z').value);
         const displayMode = document.getElementById('p-display').value;
         const z_total = (displayMode === 'full') ? z : 1;
 
         const statusBox = document.getElementById('status-box');
-        if (undercut) {
+        if (data3D.undercut) {
             statusBox.className = "warning";
             statusBox.innerHTML = "⚠️ ПОДРЕЗ (z_v < z_крит)!";
         } else {
@@ -254,10 +245,11 @@
             statusBox.innerHTML = "✅ Геометрия в норме.";
         }
 
+        // --- 1. Рендеринг Истинной 3D-модели ---
         const vertices = [];
         const indices = [];
         let offset = 0;
-        const numPts = top.length;
+        const numPts = top3D.length;
 
         for (let k = 0; k < z_total; k++) {
             const angle = k * (2 * Math.PI / z);
@@ -265,13 +257,14 @@
             const sinA = Math.sin(angle);
 
             for (let i = 0; i < numPts; i++) {
-                let bx = bottom[i].x * cosA - bottom[i].y * sinA;
-                let by = bottom[i].x * sinA + bottom[i].y * cosA;
-                vertices.push(bx, by, 0);
+                // Вращаем 3D точки вокруг оси Z для построения зубьев
+                let bx = bot3D[i].x * cosA - bot3D[i].y * sinA;
+                let by = bot3D[i].x * sinA + bot3D[i].y * cosA;
+                vertices.push(bx, by, bot3D[i].z);
 
-                let tx = top[i].x * cosA - top[i].y * sinA;
-                let ty = top[i].x * sinA + top[i].y * cosA;
-                vertices.push(tx, ty, H_cut);
+                let tx = top3D[i].x * cosA - top3D[i].y * sinA;
+                let ty = top3D[i].x * sinA + top3D[i].y * cosA;
+                vertices.push(tx, ty, top3D[i].z);
             }
 
             for (let i = 0; i < numPts - 1; i++) {
@@ -281,6 +274,7 @@
                 indices.push(nb, nt, ct);
             }
 
+            // Замыкание вершины зуба (внешнего диаметра)
             if (displayMode === 'full') {
                 let last_b = offset + (numPts - 1) * 2;
                 let last_t = last_b + 1;
@@ -301,12 +295,13 @@
         const mat = new THREE.MeshStandardMaterial({ color: 0x0288d1, roughness: 0.3, metalness: 0.8, side: THREE.DoubleSide });
         gearGroup.add(new THREE.Mesh(geo, mat));
 
+        // Визуализация наклона проволоки
         if (document.getElementById('p-show-wire').value === 'yes') {
             const wireMat = new THREE.LineBasicMaterial({ color: 0xffa726, transparent: true, opacity: 0.8 });
-            for (let i = 0; i < top.length; i += Math.max(1, Math.floor(top.length / 25))) {
+            for (let i = 0; i < top3D.length; i += Math.max(1, Math.floor(top3D.length / 25))) {
                 const points = [
-                    new THREE.Vector3(bottom[i].x, bottom[i].y, 0),
-                    new THREE.Vector3(top[i].x, top[i].y, H_cut)
+                    new THREE.Vector3(bot3D[i].x, bot3D[i].y, bot3D[i].z),
+                    new THREE.Vector3(top3D[i].x, top3D[i].y, top3D[i].z)
                 ];
                 wireGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), wireMat));
             }
@@ -314,15 +309,24 @@
 
         scene.add(gearGroup);
         scene.add(wireGroup);
+
+        // --- 2. Проекция на плоскости UV/XY для CAM (G-Code/DXF) ---
+        // Поворачиваем 3D координаты на обратный угол станка, чтобы корень был параллелен оси Z
+        const delta_f = parseFloat(document.getElementById('p-delta-f').value) * Math.PI / 180;
+        const cos_f = Math.cos(-delta_f);
+        const sin_f = Math.sin(-delta_f);
+
+        cachedData.top = top3D.map(p => ({ x: p.x, y: p.y * cos_f - p.z * sin_f }));
+        cachedData.bottom = bot3D.map(p => ({ x: p.x, y: p.y * cos_f - p.z * sin_f }));
     }
 
     function animate() {
         requestAnimationFrame(animate);
-        // Вращение теперь управляется контроллером (мышью/сенсором), а не автоматически
         controls.update(); 
         renderer.render(scene, camera);
     }
 
+    // Экспорт G-Кода работает с плоскими EDM проекциями
     function downloadNC() {
         const { top, bottom } = cachedData;
         const z = document.getElementById('p-z').value;
@@ -332,68 +336,4 @@
         nc += "(--- ROUGH PASS WITH ALLOWANCE ---)\n";
         nc += `M98 P1001 L${z}\n\n`;
         nc += "(--- FINISH PASS ---)\n";
-        nc += `M98 P1002 L${z}\nM02\n\n`;
-
-        nc += "O1001\n";
-        nc += `G01 G42 X${(bottom[0].x + allowance).toFixed(5)} Y${bottom[0].y.toFixed(5)} U${(top[0].x + allowance).toFixed(5)} V${top[0].y.toFixed(5)} D1 F80.0\n`;
-        for (let i = 1; i < top.length; i++) nc += `G01 X${(bottom[i].x + allowance).toFixed(5)} Y${bottom[i].y.toFixed(5)} U${(top[i].x + allowance).toFixed(5)} V${top[i].y.toFixed(5)}\n`;
-        nc += "G01 G40 X0 Y0 U0 V0\nG91\nG00 C" + (360 / z).toFixed(3) + "\nG90\nM99\n\n";
-
-        nc += "O1002\n";
-        nc += `G01 G42 X${bottom[0].x.toFixed(5)} Y${bottom[0].y.toFixed(5)} U${top[0].x.toFixed(5)} V${top[0].y.toFixed(5)} D2 F40.0\n`;
-        for (let i = 1; i < top.length; i++) nc += `G01 X${bottom[i].x.toFixed(5)} Y${bottom[i].y.toFixed(5)} U${top[i].x.toFixed(5)} V${top[i].y.toFixed(5)}\n`;
-        nc += "G01 G40 X0 Y0 U0 V0\nG91\nG00 C" + (360 / z).toFixed(3) + "\nG90\nM99\n%";
-
-        downloadFile(nc, "gear_multipass.nc", "text/plain");
-    }
-
-    function downloadDXF() {
-        const { top, bottom } = cachedData;
-        let dxf = "0\nSECTION\n2\nENTITIES\n";
-        function addPoly(pts, layer) {
-            pts.forEach((p, idx) => {
-                let next = pts[(idx + 1) % pts.length];
-                dxf += `0\nLINE\n8\n${layer}\n10\n${p.x}\n20\n${p.y}\n30\n0\n11\n${next.x}\n21\n${next.y}\n31\n0\n`;
-            });
-        }
-        addPoly(bottom, "XY_SMALL_END");
-        addPoly(top, "UV_LARGE_END");
-        dxf += "0\nENDSEC\n0\nEOF";
-        downloadFile(dxf, "gear_contours_pro.dxf", "application/dxf");
-    }
-
-    function savePreset() {
-        const data = {};
-        document.querySelectorAll('#ui input, #ui select').forEach(el => data[el.id] = el.value);
-        localStorage.setItem('gear_preset_active', JSON.stringify(data));
-        alert('Параметры успешно сохранены!');
-    }
-
-    function loadPreset(silent = false) {
-        const saved = localStorage.getItem('gear_preset_active');
-        if (saved) {
-            const data = JSON.parse(saved);
-            for (let id in data) {
-                const el = document.getElementById(id);
-                if (el) el.value = data[id];
-            }
-            if (!silent) {
-                rebuildApp();
-                alert('Параметры загружены!');
-            }
-        }
-    }
-
-    function downloadFile(content, filename, contentType) {
-        const a = document.createElement('a');
-        const file = new Blob([content], { type: contentType });
-        a.href = URL.createObjectURL(file);
-        a.download = filename;
-        a.click();
-    }
-
-    init3D();
-</script>
-
-</body>
-</html>
+        nc += `M98 P1002 L${z}\
