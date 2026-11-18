@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Параметрический генератор зубчатых колес</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; background: #1a1a1a; color: #fff; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        #ui { position: absolute; top: 15px; left: 15px; background: rgba(30, 30, 30, 0.9); padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10; border: 1px solid #444; }
+        .control-group { margin-bottom: 12px; }
+        label { display: inline-block; width: 130px; font-size: 14px; }
+        input { width: 80px; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid #555; border-radius: 4px; text-align: center; }
+        button { width: 100%; padding: 8px; background: #2194CE; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+        button:hover { background: #1a7bb5; }
+    </style>
+    <!-- Подключаем Three.js для 3D-графики в браузере -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div id="ui">
+    <h3>Параметры шестерни</h3>
+    <div class="control-group">
+        <label>Модуль (m):</label>
+        <input type="number" id="param-m" value="3" step="0.5" min="1">
+    </div>
+    <div class="control-group">
+        <label>Число зубьев (z):</label>
+        <input type="number" id="param-z" value="36" min="6" max="100">
+    </div>
+    <div class="control-group">
+        <label>Ширина венца (b):</label>
+        <input type="number" id="param-b" value="23" min="5">
+    </div>
+    <button id="generate-btn" onclick="buildGear()">Построить 3D модель</button>
+</div>
+
+<div id="canvas-container"></div>
+
+<script>
+    // Инициализация 3D сцены Three.js
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    camera.position.set(0, -120, 100);
+    camera.up.set(0, 0, 1);
+    camera.lookAt(0, 0, 0);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    light1.position.set(50, -100, 150);
+    scene.add(light1);
+
+    let gearMesh = null;
+
+    function buildGear() {
+        if (gearMesh) scene.remove(gearMesh);
+
+        // Читаем параметры из интерфейса
+        const m = parseFloat(document.getElementById('param-m').value);
+        const z = parseInt(document.getElementById('param-z').value);
+        const b = parseFloat(document.getElementById('param-b').value);
+
+        // Геометрический расчет эвольвенты (аналог алгоритма)
+        const alpha = 20 * Math.PI / 180;
+        const r_pitch = (m * z) / 2;
+        const r_base = r_pitch * Math.cos(alpha);
+        const r_tip = r_pitch + m;
+        const r_root = r_pitch - 1.25 * m;
+
+        const toothPoints = [];
+        const steps = 15;
+        for (let i = 0; i <= steps; i++) {
+            let r = r_root + (r_tip - r_root) * (i / steps);
+            let inv_alpha = Math.tan(alpha) - alpha;
+            let angle = r < r_base ? inv_alpha : Math.sqrt((r / r_base)**2 - 1) - alpha;
+            toothPoints.push({ x: r * Math.cos(angle), y: r * Math.sin(angle) });
+        }
+
+        const vertices = [];
+        const indices = [];
+        let vertexOffset = 0;
+        const angleStep = (2 * Math.PI) / z;
+
+        for (let i = 0; i < z; i++) {
+            let rot = i * angleStep;
+            
+            // Строим профиль зуба с поворотом на угол зуба
+            for (let pt of toothPoints) {
+                let x1 = pt.x * Math.cos(rot) - pt.y * Math.sin(rot);
+                let y1 = pt.x * Math.sin(rot) + pt.y * Math.cos(rot);
+
+                // Нижний и верхний торцы (выдавливание по оси Z)
+                vertices.push(x1, y1, -b / 2);
+                vertices.push(x1, y1, b / 2);
+            }
+
+            let numPts = toothPoints.length;
+            for (let j = 0; j < numPts - 1; j++) {
+                let cb = vertexOffset + j * 2;
+                let ct = cb + 1;
+                let nb = vertexOffset + (j + 1) * 2;
+                let nt = nb + 1;
+
+                indices.push(cb, nb, ct);
+                indices.push(nb, nt, ct);
+            }
+            vertexOffset += numPts * 2;
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x2194CE, 
+            roughness: 0.2, 
+            metalness: 0.8, 
+            side: THREE.DoubleSide 
+        });
+
+        gearMesh = new THREE.Mesh(geometry, material);
+        scene.add(gearMesh);
+    }
+
+    // Первичная генерация при загрузке
+    buildGear();
+
+    // Вращение модели мышкой/анимация
+    function animate() {
+        requestAnimationFrame(animate);
+        if (gearMesh) gearMesh.rotation.z += 0.005;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+
+</body>
+</html>
