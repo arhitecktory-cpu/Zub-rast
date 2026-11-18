@@ -2,115 +2,205 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Параметрический генератор зубчатых колес</title>
+    <title>CAD/CAM Генератор конических зубчатых колес (EDM)</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: sans-serif; background: #1a1a1a; color: #fff; }
+        body { margin: 0; overflow: hidden; font-family: sans-serif; background: #121212; color: #e0e0e0; }
         #canvas-container { width: 100vw; height: 100vh; display: block; }
-        #ui { position: absolute; top: 15px; left: 15px; background: rgba(30, 30, 30, 0.9); padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10; border: 1px solid #444; }
-        .control-group { margin-bottom: 12px; }
-        label { display: inline-block; width: 130px; font-size: 14px; }
-        input { width: 80px; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid #555; border-radius: 4px; text-align: center; }
-        button { width: 100%; padding: 8px; background: #2194CE; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; }
-        button:hover { background: #1a7bb5; }
+        #ui { 
+            position: absolute; top: 15px; left: 15px; background: rgba(30, 30, 30, 0.92); 
+            padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); 
+            z-index: 10; border: 1px solid #444; width: 320px; max-height: 90vh; overflow-y: auto;
+        }
+        h3 { margin-top: 0; color: #4fc3f7; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 8px; }
+        .control-group { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        label { font-size: 13px; color: #bbb; }
+        input, select { width: 110px; padding: 5px; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px; text-align: center; }
+        button { width: 100%; padding: 10px; background: #0288d1; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: background 0.2s; }
+        button:hover { background: #039be5; }
+        button.secondary { background: #388e3c; margin-top: 5px; }
+        button.secondary:hover { background: #43a047; }
+        .section-title { font-size: 12px; font-weight: bold; color: #81d4fa; margin: 15px 0 5px 0; text-transform: uppercase; }
     </style>
-    <!-- Подключаем Three.js для 3D-графики в браузере -->
+    <!-- Three.js для 3D визуализации -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
 <div id="ui">
-    <h3>Параметры шестерни</h3>
+    <h3>Параметры шестерни (EDM)</h3>
+    
+    <div class="section-title">Основные размеры</div>
     <div class="control-group">
-        <label>Модуль (m):</label>
-        <input type="number" id="param-m" value="3" step="0.5" min="1">
+        <label>Модуль (me):</label>
+        <input type="number" id="param-me" value="3.0" step="0.5">
     </div>
     <div class="control-group">
         <label>Число зубьев (z):</label>
-        <input type="number" id="param-z" value="36" min="6" max="100">
+        <input type="number" id="param-z" value="36" step="1">
+    </div>
+    <div class="control-group">
+        <label>Внешний радиус (Re):</label>
+        <input type="number" id="param-re" value="76.368" step="0.001">
     </div>
     <div class="control-group">
         <label>Ширина венца (b):</label>
-        <input type="number" id="param-b" value="23" min="5">
+        <input type="number" id="param-b" value="23.0" step="0.1">
     </div>
-    <button id="generate-btn" onclick="buildGear()">Построить 3D модель</button>
+
+    <div class="section-title">Углы и кинематика</div>
+    <div class="control-group">
+        <label>Угол профиля (alpha):</label>
+        <input type="number" id="param-alpha" value="20.0" step="0.1">
+    </div>
+    <div class="control-group">
+        <label>Угол конуса (delta):</label>
+        <input type="number" id="param-delta" value="45.0" step="0.1">
+    </div>
+    <div class="control-group">
+        <label>Угол оси A (фрез.):</label>
+        <input type="number" id="param-delta-f" value="42.3011" step="0.0001">
+    </div>
+    <div class="control-group">
+        <label>Утонение (Sy_mid):</label>
+        <input type="number" id="param-sy" value="0.028" step="0.001">
+    </div>
+
+    <button onclick="rebuildApp()">Пересчитать 3D модель</button>
+    <button class="secondary" onclick="downloadNC()">Скачать G-код (.nc)</button>
+    <button class="secondary" onclick="downloadDXF()">Скачать DXF (Верх/Низ)</button>
 </div>
 
 <div id="canvas-container"></div>
 
 <script>
-    // Инициализация 3D сцены Three.js
-    const container = document.getElementById('canvas-container');
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    container.appendChild(renderer.domElement);
+    let scene, camera, renderer, wireframeGroup;
+    let cachedContours = { top: [], bottom: [] };
 
-    camera.position.set(0, -120, 100);
-    camera.up.set(0, 0, 1);
-    camera.lookAt(0, 0, 0);
+    function init3D() {
+        const container = document.getElementById('canvas-container');
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-    const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
-    light1.position.set(50, -100, 150);
-    scene.add(light1);
+        camera.position.set(0, -100, 80);
+        camera.up.set(0, 0, 1);
+        camera.lookAt(0, 0, 0);
 
-    let gearMesh = null;
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const light = new THREE.DirectionalLight(0xffffff, 0.8);
+        light.position.set(50, -100, 150);
+        scene.add(light);
 
-    function buildGear() {
-        if (gearMesh) scene.remove(gearMesh);
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
-        // Читаем параметры из интерфейса
-        const m = parseFloat(document.getElementById('param-m').value);
+        rebuildApp();
+        animate();
+    }
+
+    // Геометрический расчет профилей впадины для малого и большого торцов
+    function generateToothContours() {
+        const me = parseFloat(document.getElementById('param-me').value);
         const z = parseInt(document.getElementById('param-z').value);
+        const Re = parseFloat(document.getElementById('param-re').value);
         const b = parseFloat(document.getElementById('param-b').value);
+        const alpha = parseFloat(document.getElementById('param-alpha').value) * Math.PI / 180;
+        const delta = parseFloat(document.getElementById('param-delta').value) * Math.PI / 180;
+        const delta_f = parseFloat(document.getElementById('param-delta-f').value) * Math.PI / 180;
+        const delta_s_mid = parseFloat(document.getElementById('param-sy').value);
+        
+        const Ri = Re - b;
+        const Rm = Re - b / 2;
+        const theta_f = delta - delta_f;
+        const H_cut = b * Math.cos(theta_f);
 
-        // Геометрический расчет эвольвенты (аналог алгоритма)
-        const alpha = 20 * Math.PI / 180;
-        const r_pitch = (m * z) / 2;
-        const r_base = r_pitch * Math.cos(alpha);
-        const r_tip = r_pitch + m;
-        const r_root = r_pitch - 1.25 * m;
+        function buildContour(R_cone) {
+            const scale = R_cone / Re;
+            const h_a = 3.0 * scale;
+            const h_f = 3.6 * scale;
+            const r_v = R_cone;
+            const z_v = z / Math.cos(delta);
+            const r_b = r_v * Math.cos(alpha);
+            const r_a = r_v + h_a;
+            const r_f = r_v - h_f;
+            const r_start = Math.max(r_b, r_f);
+            
+            const tau_v = 2.0 * Math.PI / z_v;
+            const delta_s_cone = delta_s_mid * (R_cone / Rm);
+            const psi_b = (tau_v / 4.0) + (delta_s_cone / (2.0 * r_v)) - (Math.tan(alpha) - alpha);
+            const H_tooth_ortho = (h_a + h_f) * Math.cos(theta_f);
 
-        const toothPoints = [];
-        const steps = 15;
-        for (let i = 0; i <= steps; i++) {
-            let r = r_root + (r_tip - r_root) * (i / steps);
-            let inv_alpha = Math.tan(alpha) - alpha;
-            let angle = r < r_base ? inv_alpha : Math.sqrt((r / r_base)**2 - 1) - alpha;
-            toothPoints.push({ x: r * Math.cos(angle), y: r * Math.sin(angle) });
+            const right_inv = [];
+            for (let r of linspace(r_start + 0.05 * scale, r_a, 40)) {
+                let alpha_r = Math.acos(r_b / r);
+                let inv_r = Math.tan(alpha_r) - alpha_r;
+                let th = psi_b + inv_r;
+                let x_c = r * Math.sin(th);
+                let y_c = r * Math.cos(th) - r_f;
+                let R_pt = R_cone + y_c * Math.sin(theta_f);
+                let k_ray = R_pt / R_cone;
+                right_inv.push({ x: x_c * k_ray, y: y_c * Math.cos(theta_f) - H_tooth_ortho });
+            }
+
+            // Скругление дна и подводы
+            const p0 = right_inv[0];
+            const fillet = [];
+            for (let t of linspace(0, 1, 10)) {
+                let x = (1-t)**2 * (p0.x * 0.2) + 2*(1-t)*t * p0.x + t**2 * p0.x;
+                let y = (1-t)**2 * (-H_tooth_ortho) + 2*(1-t)*t * (-H_tooth_ortho) + t**2 * p0.y;
+                fillet.push({x, y});
+            }
+
+            const p_top = right_inv[right_inv.length - 1];
+            const p_prev = right_inv[right_inv.length - 2];
+            const dx = p_top.x - p_prev.x, dy = p_top.y - p_prev.y;
+            const p_lead = { x: p_top.x + dx * ((1.5 - p_top.y) / dy), y: 1.5 };
+
+            const right_side = [...fillet, ...right_inv.slice(1), p_lead];
+            const left_side = right_side.slice().reverse().map(p => ({ x: -p.x, y: p.y }));
+            
+            return [...left_side, ...right_side.slice(1)];
         }
 
+        const top = buildContour(Re);
+        const bottom = buildContour(Ri);
+        return { top, bottom, H_cut };
+    }
+
+    function linspace(start, stop, num) {
+        const arr = [];
+        const step = (stop - start) / (num - 1);
+        for (let i = 0; i < num; i++) arr.push(start + step * i);
+        return arr;
+    }
+
+    function rebuildApp() {
+        if (wireframeGroup) scene.remove(wireframeGroup);
+        wireframeGroup = new THREE.Group();
+
+        cachedContours = generateToothContours();
+        const { top, bottom, H_cut } = cachedContours;
+
+        // Построение 3D сетки боковой поверхности зуба
         const vertices = [];
         const indices = [];
-        let vertexOffset = 0;
-        const angleStep = (2 * Math.PI) / z;
+        let vOffset = 0;
 
-        for (let i = 0; i < z; i++) {
-            let rot = i * angleStep;
-            
-            // Строим профиль зуба с поворотом на угол зуба
-            for (let pt of toothPoints) {
-                let x1 = pt.x * Math.cos(rot) - pt.y * Math.sin(rot);
-                let y1 = pt.x * Math.sin(rot) + pt.y * Math.cos(rot);
+        for (let i = 0; i < top.length; i++) {
+            vertices.push(bottom[i].x, bottom[i].y, 0); // Низ (XY)
+            vertices.push(top[i].x, top[i].y, H_cut);    // Верх (UV)
+        }
 
-                // Нижний и верхний торцы (выдавливание по оси Z)
-                vertices.push(x1, y1, -b / 2);
-                vertices.push(x1, y1, b / 2);
-            }
-
-            let numPts = toothPoints.length;
-            for (let j = 0; j < numPts - 1; j++) {
-                let cb = vertexOffset + j * 2;
-                let ct = cb + 1;
-                let nb = vertexOffset + (j + 1) * 2;
-                let nt = nb + 1;
-
-                indices.push(cb, nb, ct);
-                indices.push(nb, nt, ct);
-            }
-            vertexOffset += numPts * 2;
+        for (let i = 0; i < top.length - 1; i++) {
+            let cb = i * 2, ct = cb + 1;
+            let nb = (i + 1) * 2, nt = nb + 1;
+            indices.push(cb, nb, ct);
+            indices.push(nb, nt, ct);
         }
 
         const geometry = new THREE.BufferGeometry();
@@ -119,32 +209,67 @@
         geometry.computeVertexNormals();
 
         const material = new THREE.MeshStandardMaterial({ 
-            color: 0x2194CE, 
-            roughness: 0.2, 
-            metalness: 0.8, 
-            side: THREE.DoubleSide 
+            color: 0x0288d1, roughness: 0.3, metalness: 0.5, side: THREE.DoubleSide 
         });
-
-        gearMesh = new THREE.Mesh(geometry, material);
-        scene.add(gearMesh);
+        
+        wireframeGroup.add(new THREE.Mesh(geometry, material));
+        scene.add(wireframeGroup);
     }
 
-    // Первичная генерация при загрузке
-    buildGear();
-
-    // Вращение модели мышкой/анимация
     function animate() {
         requestAnimationFrame(animate);
-        if (gearMesh) gearMesh.rotation.z += 0.005;
+        if (wireframeGroup) wireframeGroup.rotation.z += 0.003;
         renderer.render(scene, camera);
     }
-    animate();
 
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    // Экспорт G-кода (.nc)
+    function downloadNC() {
+        const { top, bottom, H_cut } = cachedContours;
+        const z = document.getElementById('param-z').value;
+        
+        let nc = "%\nO0001 (PARAMETRIC GEAR 4-AXIS EDM)\n";
+        nc += "G21\nG90\nG92 X0 Y0 U0 V0 C0\n";
+        nc += `M98 P1001 L${z}\nM02\n\n`;
+        nc += "O1001\n";
+        nc += `G01 G42 X${bottom[0].x.toFixed(5)} Y${bottom[0].y.toFixed(5)} U{top[0].x.toFixed(5)} V{top[0].y.toFixed(5)} D1 F60.0\n`;
+        
+        for (let i = 1; i < top.length; i++) {
+            nc += `G01 X${bottom[i].x.toFixed(5)} Y${bottom[i].y.toFixed(5)} U${top[i].x.toFixed(5)} V${top[i].y.toFixed(5)}\n`;
+        }
+        
+        nc += "G01 G40 X0 Y0 U0 V0\nG91\nG00 C" + (360 / z).toFixed(3) + "\nG90\nM99\n%";
+        
+        downloadFile(nc, "gear_program.nc", "text/plain");
+    }
+
+    // Экспорт DXF контуров
+    function downloadDXF() {
+        const { top, bottom } = cachedContours;
+        let dxf = "0\nSECTION\n2\ENTITIES\n";
+        
+        function addPoly(pts, layer) {
+            pts.forEach((p, idx) => {
+                let next = pts[(idx + 1) % pts.length];
+                dxf += `0\nLINE\n8\n${layer}\n10\n${p.x}\n20\n${p.y}\n30\n0\n11\n${next.x}\n21\n${next.y}\n31\n0\n`;
+            });
+        }
+        
+        addPoly(bottom, "SMALL_END_XY");
+        addPoly(top, "LARGE_END_UV");
+        dxf += "0\nENDSEC\n0\nEOF";
+        
+        downloadFile(dxf, "gear_contours.dxf", "application/dxf");
+    }
+
+    function downloadFile(content, filename, contentType) {
+        const a = document.createElement('a');
+        const file = new Blob([content], { type: contentType });
+        a.href = URL.createObjectURL(file);
+        a.download = filename;
+        a.click();
+    }
+
+    init3D();
 </script>
 
 </body>
