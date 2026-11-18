@@ -2,38 +2,70 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Профессиональный CAD/CAM Генератор конических шестерен (EDM)</title>
+    <!-- КРИТИЧНО ДЛЯ МОБИЛЬНЫХ: Отключает зум всей страницы и адаптирует под экран -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Профессиональный CAD/CAM Генератор (EDM)</title>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #e0e0e0; }
-        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; touch-action: none; }
+        
+        #ui-toggle {
+            position: absolute; top: 15px; right: 15px; background: #0288d1; color: white;
+            padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;
+            z-index: 20; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;
+        }
+
         #ui { 
             position: absolute; top: 15px; left: 15px; background: rgba(20, 20, 20, 0.96); 
             padding: 15px; border-radius: 8px; box-shadow: 0 4px 25px rgba(0,0,0,0.8); 
-            z-index: 10; border: 1px solid #333; width: 360px; max-height: 94vh; overflow-y: auto;
+            z-index: 10; border: 1px solid #333; width: 340px; max-height: 94vh; overflow-y: auto;
+            transition: opacity 0.3s, transform 0.3s;
+            box-sizing: border-box;
         }
-        h3 { margin-top: 0; color: #4fc3f7; font-size: 15px; border-bottom: 1px solid #444; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .control-group { margin-bottom: 7px; display: flex; justify-content: space-between; align-items: center; }
-        label { font-size: 11.5px; color: #aaa; }
-        input, select { width: 105px; padding: 3px 6px; background: #1a1a1a; color: #fff; border: 1px solid #444; border-radius: 4px; text-align: center; font-size: 12px; }
-        button { width: 100%; padding: 8px; background: #0288d1; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 6px; transition: background 0.2s; font-size: 12px; }
+        
+        #ui.hidden { opacity: 0; pointer-events: none; transform: translateY(-20px); }
+
+        h3 { margin-top: 0; color: #4fc3f7; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .control-group { margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        label { font-size: 12px; color: #aaa; }
+        input, select { width: 110px; padding: 5px; background: #1a1a1a; color: #fff; border: 1px solid #444; border-radius: 4px; text-align: center; font-size: 13px; }
+        button { width: 100%; padding: 10px; background: #0288d1; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 6px; transition: background 0.2s; font-size: 13px; }
         button:hover { background: #039be5; }
         button.secondary { background: #388e3c; }
         button.secondary:hover { background: #43a047; }
         button.accent { background: #f57c00; }
         button.accent:hover { background: #fb8c00; }
-        .section-title { font-size: 11px; font-weight: bold; color: #81d4fa; margin: 10px 0 4px 0; text-transform: uppercase; border-left: 3px solid #0288d1; padding-left: 5px; }
-        #status-box { margin-top: 10px; padding: 8px; border-radius: 4px; font-size: 11px; background: #1b5e20; color: #c8e6c9; border: 1px solid #2e7d32; }
+        .section-title { font-size: 12px; font-weight: bold; color: #81d4fa; margin: 12px 0 6px 0; text-transform: uppercase; border-left: 3px solid #0288d1; padding-left: 6px; }
+        #status-box { margin-top: 10px; padding: 8px; border-radius: 4px; font-size: 12px; background: #1b5e20; color: #c8e6c9; border: 1px solid #2e7d32; text-align: center;}
         #status-box.warning { background: #b71c1c; color: #ffcdd2; border: 1px solid #c62828; }
-        .row-btns { display: flex; gap: 5px; }
+        .row-btns { display: flex; gap: 8px; }
+
+        /* Адаптация под мобильные устройства */
+        @media (max-width: 768px) {
+            #ui-toggle { display: block; }
+            #ui { 
+                width: calc(100vw - 30px); 
+                top: 70px; 
+                max-height: calc(100vh - 90px);
+            }
+            input, select { width: 120px; padding: 8px; }
+            button { padding: 14px; font-size: 14px; }
+            label { font-size: 14px; }
+            .section-title { font-size: 13px; margin: 15px 0 8px 0; }
+        }
     </style>
+    <!-- Основная библиотека Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls для управления вращением с помощью мыши и сенсора -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
+<div id="ui-toggle" onclick="toggleUI()">⚙️ Настройки</div>
+
 <div id="ui">
-    <h3><span>CAD/CAM Конические шестерни</span> <span style="font-size:10px; color:#888;">v3.0 3D-Solid</span></h3>
-    
-    <div id="status-box">Геометрия стабильна. Подрез не обнаружен.</div>
+    <h3><span>CAD/CAM Шестерни</span> <span style="font-size:11px; color:#888;">v4.0 Mobile</span></h3>
+    <div id="status-box">Геометрия стабильна.</div>
 
     <div class="section-title">1. Параметры по ГОСТ / Чертежу</div>
     <div class="control-group"><label>Модуль внешний me:</label><input type="number" id="p-me" value="3.0" step="0.5"></div>
@@ -43,33 +75,33 @@
     <div class="control-group"><label>Угол конуса delta (°):</label><input type="number" id="p-delta" value="45.0" step="0.1"></div>
     <div class="control-group"><label>Угол профиля alpha (°):</label><input type="number" id="p-alpha" value="20.0" step="0.1"></div>
 
-    <div class="section-title">2. Коэффициенты и визуализация</div>
+    <div class="section-title">2. Коэффициенты и визуал</div>
     <div class="control-group"><label>Смещение x:</label><input type="number" id="p-x" value="0.0" step="0.05"></div>
     <div class="control-group"><label>Утонение Sy_mid:</label><input type="number" id="p-sy" value="0.028" step="0.001"></div>
-    <div class="control-group"><label>Точки аппроксимации:</label><input type="number" id="p-res" value="99" step="1" min="20" max="200"></div>
-    <div class="control-group"><label>Отображение модели:</label>
+    <div class="control-group"><label>Точки (качество):</label><input type="number" id="p-res" value="99" step="1" min="20" max="200"></div>
+    <div class="control-group"><label>Вид детали:</label>
         <select id="p-display" onchange="rebuildApp()">
             <option value="full">Вся деталь</option>
-            <option value="single">Только один рез</option>
+            <option value="single">Один рез</option>
         </select>
     </div>
-    <div class="control-group"><label>Отображ. проволоки:</label>
+    <div class="control-group"><label>Нить проволоки:</label>
         <select id="p-show-wire" onchange="rebuildApp()">
-            <option value="no">Выкл</option>
-            <option value="yes">Вкл (для 1 зуба)</option>
+            <option value="no">Скрыть</option>
+            <option value="yes">Показать</option>
         </select>
     </div>
 
     <div class="section-title">3. Станок и ЭЭО (ALK800FU)</div>
     <div class="control-group"><label>Угол оси A delta_f (°):</label><input type="number" id="p-delta-f" value="42.3011" step="0.0001"></div>
-    <div class="control-group"><label>Припуск черновой (mm):</label><input type="number" id="p-allowance" value="0.15" step="0.05"></div>
-    <div class="control-group"><label>Искра + радиус (D1):</label><input type="number" id="p-offset" value="0.100" step="0.005"></div>
+    <div class="control-group"><label>Припуск черн. (мм):</label><input type="number" id="p-allowance" value="0.15" step="0.05"></div>
+    <div class="control-group"><label>Искра + радиус D1:</label><input type="number" id="p-offset" value="0.100" step="0.005"></div>
 
-    <button onclick="rebuildApp()">Пересчитать модель</button>
+    <button onclick="rebuildApp(); if(window.innerWidth<=768) toggleUI();">Обновить 3D модель</button>
     
     <div class="section-title">4. Экспорт и Пресеты</div>
-    <button class="secondary" onclick="downloadNC()">Скачать G-код (Многопроходный .nc)</button>
-    <button class="secondary" onclick="downloadDXF()">Скачать DXF (Верх/Низ)</button>
+    <button class="secondary" onclick="downloadNC()">Скачать G-код (.nc)</button>
+    <button class="secondary" onclick="downloadDXF()">Скачать DXF</button>
     <div class="row-btns">
         <button class="accent" onclick="savePreset()">Сохранить</button>
         <button class="accent" onclick="loadPreset()">Загрузить</button>
@@ -79,8 +111,12 @@
 <div id="canvas-container"></div>
 
 <script>
-    let scene, camera, renderer, gearGroup, wireGroup;
+    let scene, camera, renderer, gearGroup, wireGroup, controls;
     let cachedData = { top: [], bottom: [], H_cut: 0, undercut: false };
+
+    function toggleUI() {
+        document.getElementById('ui').classList.toggle('hidden');
+    }
 
     function init3D() {
         const container = document.getElementById('canvas-container');
@@ -88,11 +124,17 @@
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        // Адаптация DPI для экранов мобильных (Retina)
+        renderer.setPixelRatio(window.devicePixelRatio);
         container.appendChild(renderer.domElement);
 
         camera.position.set(0, -120, 100);
         camera.up.set(0, 0, 1);
-        camera.lookAt(0, 0, 0);
+
+        // Интерактивное управление (OrbitControls)
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
 
         scene.add(new THREE.AmbientLight(0xffffff, 0.7));
         const light = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -206,10 +248,10 @@
         const statusBox = document.getElementById('status-box');
         if (undercut) {
             statusBox.className = "warning";
-            statusBox.innerHTML = "ВНИМАНИЕ: Обнаружен подрез ножки зуба (z_v < z_крит)!";
+            statusBox.innerHTML = "⚠️ ПОДРЕЗ (z_v < z_крит)!";
         } else {
             statusBox.className = "";
-            statusBox.innerHTML = "Геометрия стабильна. Подрез отсутствует.";
+            statusBox.innerHTML = "✅ Геометрия в норме.";
         }
 
         const vertices = [];
@@ -217,13 +259,11 @@
         let offset = 0;
         const numPts = top.length;
 
-        // Генерация сплошного венца с круговым массивом
         for (let k = 0; k < z_total; k++) {
             const angle = k * (2 * Math.PI / z);
             const cosA = Math.cos(angle);
             const sinA = Math.sin(angle);
 
-            // Трансформация точек для каждого зуба
             for (let i = 0; i < numPts; i++) {
                 let bx = bottom[i].x * cosA - bottom[i].y * sinA;
                 let by = bottom[i].x * sinA + bottom[i].y * cosA;
@@ -234,7 +274,6 @@
                 vertices.push(tx, ty, H_cut);
             }
 
-            // Индексы боковой поверхности реза (впадина)
             for (let i = 0; i < numPts - 1; i++) {
                 let cb = offset + i * 2, ct = cb + 1;
                 let nb = offset + (i + 1) * 2, nt = nb + 1;
@@ -242,7 +281,6 @@
                 indices.push(nb, nt, ct);
             }
 
-            // Замыкание по наружному диаметру (вершинам зубьев), если включен режим всей детали
             if (displayMode === 'full') {
                 let last_b = offset + (numPts - 1) * 2;
                 let last_t = last_b + 1;
@@ -252,7 +290,6 @@
                 indices.push(last_b, next_first_b, last_t);
                 indices.push(next_first_b, next_first_t, last_t);
             }
-
             offset += numPts * 2;
         }
 
@@ -264,7 +301,6 @@
         const mat = new THREE.MeshStandardMaterial({ color: 0x0288d1, roughness: 0.3, metalness: 0.8, side: THREE.DoubleSide });
         gearGroup.add(new THREE.Mesh(geo, mat));
 
-        // Визуализация проволоки (только для первой впадины, чтобы не перегружать деталь)
         if (document.getElementById('p-show-wire').value === 'yes') {
             const wireMat = new THREE.LineBasicMaterial({ color: 0xffa726, transparent: true, opacity: 0.8 });
             for (let i = 0; i < top.length; i += Math.max(1, Math.floor(top.length / 25))) {
@@ -282,8 +318,8 @@
 
     function animate() {
         requestAnimationFrame(animate);
-        if (gearGroup) gearGroup.rotation.z -= 0.002;
-        if (wireGroup) wireGroup.rotation.z -= 0.002;
+        // Вращение теперь управляется контроллером (мышью/сенсором), а не автоматически
+        controls.update(); 
         renderer.render(scene, camera);
     }
 
@@ -293,7 +329,6 @@
         const allowance = parseFloat(document.getElementById('p-allowance').value);
         
         let nc = "%\nO0001 (MULTI-PASS 4-AXIS EDM GEAR)\nG21\nG90\nG92 X0 Y0 U0 V0 C0\n\n";
-        
         nc += "(--- ROUGH PASS WITH ALLOWANCE ---)\n";
         nc += `M98 P1001 L${z}\n\n`;
         nc += "(--- FINISH PASS ---)\n";
@@ -331,7 +366,7 @@
         const data = {};
         document.querySelectorAll('#ui input, #ui select').forEach(el => data[el.id] = el.value);
         localStorage.setItem('gear_preset_active', JSON.stringify(data));
-        alert('Параметры успешно сохранены в память браузера!');
+        alert('Параметры успешно сохранены!');
     }
 
     function loadPreset(silent = false) {
