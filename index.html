@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CAD/CAM РЦСП.3482.02.00.05/.06 (ALK800FU)</title>
+    <title>CAD/CAM РЦСП.3482.02.00.05 (ALK800FU)</title>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #e0e0e0; }
         #canvas-container { width: 100vw; height: 100vh; display: block; touch-action: none; }
@@ -65,7 +65,7 @@
 <button id="ui-toggle" type="button">⚙️ Настройки</button>
 
 <div id="ui">
-    <h3><span>РЦСП.3482.02.00.05 (ГОСТ 13754-81)</span> <span style="font-size:11px; color:#81d4fa;">v8.2</span></h3>
+    <h3><span>РЦСП.3482.02.00.05 (ГОСТ 13754-81)</span> <span style="font-size:11px; color:#81d4fa;">v8.3</span></h3>
     <div id="status-box">Загрузка геометрического ядра...</div>
     <div id="gost-check-box">
         <span>Rm: <b id="lbl-rm">64.913</b> мм</span>
@@ -127,7 +127,7 @@
     
     <div class="row-btns">
         <button type="button" class="secondary" onclick="downloadNC()">📥 G-код (.nc)</button>
-        <button type="button" class="secondary" onclick="downloadDXF()">📥 Контуры (.dxf)</button>
+        <button type="button" class="secondary" onclick="downloadDXF()">📥 Контуры DXF (Верх/Низ)</button>
     </div>
     <div class="row-btns">
         <button type="button" class="accent" onclick="savePreset()">💾 Сохранить</button>
@@ -140,7 +140,7 @@
 <script>
     let scene, renderer, camera3D, camera2D, activeCamera, controls;
     let gearGroup, flatGroup, wireSimLine;
-    let cachedData = { top3D: [], bot3D: [], topFlat: [], midFlat: [], botFlat: [], chordLine: [], H_cut: 22.97, undercut: false, maxWireAngle: 0 };
+    let cachedData = { top3D: [], bot3D: [], topFlat: [], botFlat: [], H_cut: 22.97, undercut: false, maxWireAngle: 0 };
     let isPlaying = false;
 
     document.getElementById('ui-toggle').addEventListener('click', function(e) {
@@ -272,7 +272,6 @@
         updateSimulation();
     }
 
-    // Выверенное ядро по ГОСТ 13754-81 и чертежу РЦСП.3482.02.00.05
     function calculateGearGeometry() {
         const me = parseFloat(document.getElementById('p-me').value) || 3.0;
         const z = parseInt(document.getElementById('p-z').value) || 36;
@@ -294,7 +293,6 @@
         const he = parseFloat(document.getElementById('p-he').value) || 6.6;
         const x_shift = parseFloat(document.getElementById('p-x').value) || 0.0;
         
-        // Отклонение толщины зуба по хорде в измерительном сечении Rm (из чертежа: -0.056)
         const sy_dev = parseFloat(document.getElementById('p-sy').value);
         const delta_s_mid = isNaN(sy_dev) ? 0.056 : Math.abs(sy_dev);
 
@@ -304,20 +302,17 @@
         const theta_f = delta - delta_f;
         const H_cut = b * Math.cos(theta_f);
 
-        // Эквивалентное число зубьев на дополнительном конусе Трегольда
         const z_v = z / Math.cos(delta);
         const z_crit = 2 * (1.0 - x_shift) / Math.pow(Math.sin(alpha), 2);
 
-        // Расчет контрольных параметров в измерительном сечении Rm = 64.913 мм (как в таблице чертежа)
         const r_vm = (0.5 * dm) / Math.cos(delta);
         const s_m_nominal = mm * (0.5 * Math.PI + 2 * x_shift * Math.tan(alpha));
         const psi_tooth_m = s_m_nominal / (2 * r_vm);
-        const sy_nominal = 2 * r_vm * Math.sin(psi_tooth_m); // ровно 4.005 мм для Rm=64.913!
+        const sy_nominal = 2 * r_vm * Math.sin(psi_tooth_m);
         const sy_actual = sy_nominal - delta_s_mid;
         const ha_m = mm * (1.0 + x_shift);
-        const hay_actual = ha_m + r_vm * (1 - Math.cos(psi_tooth_m)); // ровно 2.491 мм!
+        const hay_actual = ha_m + r_vm * (1 - Math.cos(psi_tooth_m));
 
-        // Параметры на внешнем торце Re
         const delta_s_ext = delta_s_mid * (Re / Rm);
         const Se_ext = me * (0.5 * Math.PI + 2 * x_shift * Math.tan(alpha)) - delta_s_ext;
         const ee_ext = Math.PI * me - Se_ext;
@@ -329,7 +324,6 @@
         document.getElementById('lbl-se').innerText = Se_ext.toFixed(3);
         document.getElementById('lbl-ee').innerText = ee_ext.toFixed(3);
 
-        // Высота головки и ножки на внешнем торце (по чертежу he = 6.6 мм: ha_e = 3.0, hf_e = 3.6)
         const ha_e_gost = (1.0 + x_shift) * me;
         const hf_e_gost = he - ha_e_gost;
 
@@ -342,9 +336,9 @@
 
         function buildSection(R, mode) {
             const R_ratio = R / Re;
-            const mt = me * R_ratio; // Точный окружной модуль сечения
-            const r_p = R * Math.sin(delta); // Делительный радиус колеса
-            const r_v = r_p / Math.cos(delta); // Радиус дополнительного конуса Трегольда
+            const mt = me * R_ratio;
+            const r_p = R * Math.sin(delta);
+            const r_v = r_p / Math.cos(delta);
 
             const hf = hf_e_gost * R_ratio;
             let ha = ha_e_gost * R_ratio;
@@ -356,7 +350,6 @@
             const rr = r_v - hf;
             const r_start = Math.max(rb, rr);
 
-            // Полуширина впадины по дуге делительной окружности строго по модулю mt и утонению
             const delta_s_local = delta_s_mid * (R / Rm);
             const half_space_arc = 0.5 * (0.5 * Math.PI * mt + delta_s_local - 2 * x_shift * mt * Math.tan(alpha));
             const psi_v = half_space_arc / r_v;
@@ -368,15 +361,12 @@
                 const theta_v = Math.atan2(xv, yv);
                 const dh = r_curr - r_v;
 
-                // 3D координаты на коническом колесе
                 const phi_wheel = theta_v / Math.sin(delta);
                 const rho = r_p + dh * Math.cos(delta);
                 const Z = -R * Math.cos(delta) + dh * Math.sin(delta);
                 const X = rho * Math.sin(phi_wheel);
                 const Y = rho * Math.cos(phi_wheel);
 
-                // Точная проекция на плоскость станка (без паразитного растяжения k_ray!)
-                // Начало координат (0,0) строго в самой нижней точке дна впадины (0, rr)
                 const fx = xv;
                 const fy = (yv - rr) * Math.cos(theta_f);
 
@@ -393,7 +383,6 @@
                 invPts.push({ xv: r_curr * Math.sin(th), yv: r_curr * Math.cos(th) });
             }
 
-            // Переходная галтель в корне зуба (радиус скругления к дну впадины rr)
             const pFirst = invPts[0];
             const filletPts = [];
             for (let i = 0; i < filletSteps; i++) {
@@ -403,7 +392,6 @@
                 filletPts.push({ xv, yv });
             }
 
-            // Выход проволоки за заготовку
             const pTop = invPts[invPts.length - 1];
             const pPrev = invPts[invPts.length - 2];
             const dx = pTop.xv - pPrev.xv;
@@ -421,16 +409,10 @@
                 pts3D.push(res.pt3D);
                 ptsFlat.push(res.ptFlat);
             }
-
-            // Точки делительной окружности впадины для контроля в DXF
-            const y_pitch_flat = (r_v * Math.cos(psi_v) - rr) * Math.cos(theta_f);
-            const x_pitch_flat = r_v * Math.sin(psi_v);
-
-            return { pts3D, ptsFlat, x_pitch_flat, y_pitch_flat };
+            return { pts3D, ptsFlat };
         }
 
         const topSec = buildSection(Re, 'top');
-        const midSec = buildSection(Rm, 'mid');
         const botSec = buildSection(Ri, 'bot');
 
         let maxDist = 0;
@@ -444,10 +426,7 @@
             top3D: topSec.pts3D,
             bot3D: botSec.pts3D,
             topFlat: topSec.ptsFlat,
-            midFlat: midSec.ptsFlat,
             botFlat: botSec.ptsFlat,
-            topPitch: { x: topSec.x_pitch_flat, y: topSec.y_pitch_flat },
-            midPitch: { x: midSec.x_pitch_flat, y: midSec.y_pitch_flat },
             H_cut,
             undercut: z_v < z_crit,
             maxWireAngle
@@ -461,7 +440,7 @@
         flatGroup = new THREE.Group();
 
         cachedData = calculateGearGeometry();
-        const { top3D, bot3D, topFlat, midFlat, botFlat, H_cut, undercut, maxWireAngle } = cachedData;
+        const { top3D, bot3D, topFlat, botFlat, H_cut, undercut, maxWireAngle } = cachedData;
 
         const z = parseInt(document.getElementById('p-z').value) || 36;
         const displayMode = document.getElementById('p-display').value;
@@ -516,9 +495,8 @@
         const mat = new THREE.MeshStandardMaterial({ color: 0x0288d1, roughness: 0.28, metalness: 0.75, side: THREE.DoubleSide });
         gearGroup.add(new THREE.Mesh(geo, mat));
 
-        // 2D контуры: Зеленый (XY малый торец), Голубой пунктир (Среднее сечение Rm), Пурпурный (UV большой торец)
+        // В 2D режиме отображаем ТОЛЬКО верхний и нижний контуры
         flatGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(botFlat), new THREE.LineBasicMaterial({ color: 0x00e676, linewidth: 2 })));
-        flatGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(midFlat), new THREE.LineBasicMaterial({ color: 0x29b6f6, linewidth: 1 })));
         flatGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(topFlat), new THREE.LineBasicMaterial({ color: 0xe040fb, linewidth: 2 })));
 
         scene.add(gearGroup);
@@ -615,38 +593,31 @@ O1001 (ROUGH SUBROUTINE)
         downloadFile(nc, `RCSP_3482_02_00_05_Z${z}.nc`, "text/plain");
     }
 
+    // ВЫГРУЗКА DXF СТРОГО ТОЛЬКО ВЕРХ И НИЗ (ДВА СЛОЯ)
     function downloadDXF() {
-        const { topFlat, midFlat, botFlat, topPitch, midPitch } = cachedData;
+        const { topFlat, botFlat } = cachedData;
         let dxf = "0\nSECTION\n2\nENTITIES\n";
         function addOpenPolyline(pts, layer) {
             for (let i = 0; i < pts.length - 1; i++) {
                 dxf += `0\nLINE\n8\n${layer}\n10\n${pts[i].x.toFixed(6)}\n20\n${pts[i].y.toFixed(6)}\n30\n0.0\n11\n${pts[i+1].x.toFixed(6)}\n21\n${pts[i+1].y.toFixed(6)}\n31\n0.0\n`;
             }
         }
-        function addLine(x1, y1, x2, y2, layer) {
-            dxf += `0\nLINE\n8\n${layer}\n10\n${x1.toFixed(6)}\n20\n${y1.toFixed(6)}\n30\n0.0\n11\n${x2.toFixed(6)}\n21\n${y2.toFixed(6)}\n31\n0.0\n`;
-        }
         addOpenPolyline(botFlat, "XY_SMALL_END_RI");
-        addOpenPolyline(midFlat, "MEASURING_SECTION_RM_64_913");
-        addOpenPolyline(topFlat, "UV_LARGE_END_RE_76_368");
+        addOpenPolyline(topFlat, "UV_LARGE_END_RE");
         
-        // Контрольные хорды делительной ширины впадины на внешнем (Re) и измерительном (Rm) сечениях
-        addLine(-topPitch.x, topPitch.y, topPitch.x, topPitch.y, "CHECK_PITCH_CHORD_RE");
-        addLine(-midPitch.x, midPitch.y, midPitch.x, midPitch.y, "CHECK_PITCH_CHORD_RM");
-
         dxf += "0\nENDSEC\n0\nEOF\n";
-        downloadFile(dxf, "RCSP_3482_02_00_05_contours.dxf", "application/dxf");
+        downloadFile(dxf, "RCSP_3482_02_00_05_top_bottom.dxf", "application/dxf");
     }
 
     function savePreset() {
         const data = {};
         document.querySelectorAll('#ui input[type="number"], #ui select').forEach(el => data[el.id] = el.value);
-        localStorage.setItem('gear_preset_v82', JSON.stringify(data));
+        localStorage.setItem('gear_preset_v83', JSON.stringify(data));
         alert('✅ Параметры сохранены в память браузера!');
     }
 
     function loadPreset(silent = false) {
-        const saved = localStorage.getItem('gear_preset_v82');
+        const saved = localStorage.getItem('gear_preset_v83');
         if (saved) {
             try {
                 const data = JSON.parse(saved);
